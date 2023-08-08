@@ -1,0 +1,15 @@
+{
+  "repeat_times": 10,
+  "n_nodes": 15,
+  "n_clusters": 3,
+  "n_ds": 5,
+  "n_features": 10,
+  "n_samples": 100,
+  "n_samples_shared": 100,
+  "noise_val": 1,
+  "reg_term": 0.01,
+  "p_in": 0.8,
+  "p_out": 0.2,
+  "models": "[Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n)]",
+  "models_pooled": "[Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n), Linreg_Torch(\n  (model): Linear(in_features=10, out_features=1, bias=False)\n  (criterion): MSELoss()\n)]"
+}
