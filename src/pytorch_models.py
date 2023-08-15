@@ -22,7 +22,7 @@ class Optimize(torch.nn.Module):
             pred = self.model(x)
         return pred.detach().numpy() 
 
-    def update(self, ds_train, ds_shared,  nodes_preds, A, regularizer_term):
+    def update(self, ds_train, ds_shared, nodes_preds, A, regularizer_term):
         
         """
 
@@ -38,7 +38,7 @@ class Optimize(torch.nn.Module):
         """
         
         X, y = ds_train[0], ds_train[1]
-        X_shared, y_shared = ds_shared[0], ds_shared[1]
+        X_shared, _ = ds_shared[0], ds_shared[1]
 
         # Convert numpy arrays to torch tensors
         X, y = torch.FloatTensor(X), torch.FloatTensor(y)
@@ -58,7 +58,7 @@ class Optimize(torch.nn.Module):
         loss_local = self.criterion(y, pred)
         loss_GTV = torch.mean( ((pred_shared - nodes_preds)**2)@A )
         loss = loss_local + (regularizer_term/2)*loss_GTV
-        
+
         # Backpropagate the gradients
         loss.backward()
 
