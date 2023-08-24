@@ -127,7 +127,7 @@ N_SAMPLES  = 100
 # Params training
 LR    = 0.03
 ITERS = 1000
-REG   = 0
+REG   = [0, 0.1, 1]
 
 # Create Simpson's datasets consisting of 3 local datasets with sample size 100
 ds_train, ds_plot = simulate_simpson()
@@ -140,34 +140,45 @@ ds_shared = get_shared_data(n_samples=N_SAMPLES, n_features=N_FEATURES)
 models = [Linreg_Torch(n_features=N_FEATURES, lr=LR) for i in range(3)]
 G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
 
-preds_plot = train(G, A, iters=ITERS, regularizer_term=REG)
+# Compute FL algo output for different regularization value
+preds_plots = []
+for reg in REG:
+    models = [Linreg_Torch(n_features=N_FEATURES, lr=LR) for i in range(3)]
+    G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
+    preds_plots.append(train(G, A, iters=ITERS, regularizer_term=reg))
 
-fig, ax = plt.subplots(1, 1, figsize=(10,8))
+fig, axs = plt.subplots(1, 3, figsize=(14,8))
 
-ln1, = ax.plot([], [], 'k')
-ln2, = ax.plot([], [], 'k')
-ln3, = ax.plot([], [], 'k')
+lns1 = [axs[0].plot([], [], 'k')[0] for i in range(3)]
+lns2 = [axs[1].plot([], [], 'k')[0] for i in range(3)]
+lns3 = [axs[2].plot([], [], 'k')[0] for i in range(3)]
 
-lns = [ln1, ln2, ln3]
+lns = [lns1, lns2, lns3]
 
-for ds, x_plot in zip(ds_train, ds_plot):
-    X = ds[0]
-    y = ds[1].reshape(-1,)
+for ax, reg in zip(axs, REG):
+    for ds, x_plot in zip(ds_train, ds_plot):
+        X, y = ds[0], ds[1].reshape(-1,)
 
-    reg = LinearRegression().fit(X, y)
-    y_plot = reg.predict(x_plot)
+        linreg = LinearRegression().fit(X, y)
+        y_plot = linreg.predict(x_plot)
+        
+        # Plot OLS predictions
+        ax.plot(x_plot, y_plot, 'k--')
+        # Plot local dataset
+        ax.scatter(X, y)
 
-    ax.plot(x_plot, y_plot, 'k--')
-    ax.scatter(X, y)
+    ax.spines[['right', 'top']].set_visible(False)
+    ax.set_title("Regularization " + str(reg))
 
 def animate(i): 
-    ds_pred = preds_plot[i]
-    for x_plot, y_plot, ln in zip(ds_plot, ds_pred, lns):
-        ln.set_data(x_plot, y_plot)
-  
+    for preds_plot, ln in zip(preds_plots, lns):
+        ds_pred = preds_plot[i]
+        for x_plot, y_plot, line in zip(ds_plot, ds_pred, ln):
+            line.set_data(x_plot, y_plot)
     return ax
 
 # call the animator.  blit=True means only re-draw the parts that have changed.
 anim = animation.FuncAnimation(fig, animate, frames=500, interval=10)
 
 anim.save('src/simpsons.mp4', fps=25)
+
