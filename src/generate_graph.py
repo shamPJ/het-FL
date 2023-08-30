@@ -1,6 +1,6 @@
 import numpy as np
 
-#--------------------------Helper functions-----------------------------#
+#========================HELPER FUNCS========================#
 
 def kl_divergence(dist1, dist2):
 
@@ -45,7 +45,7 @@ def concat(ds):
         ys.append(y)
     return np.concatenate(Xs), np.concatenate(ys)  
 
-#--------------------------Main functions-----------------------------#
+#========================MAIN FUNCS========================#
 
 def build_graph(ds_train, ds_val, ds_shared, models, cluster_labels):
 
