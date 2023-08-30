@@ -15,22 +15,39 @@ import numpy as np
 
 #========================HELPER FUNCS========================#
 
-# Compute similarity between learnt weight vector of a linear model and true weight vector for all clusters
-# Note - set bias=False for lin.model
-
 def plot_weight_dist(G, true_weights):
+
+    """
+    
+    Compute similarity between learnt weight vector of a linear model and true weight vector for all clusters
+    and plot results.
+
+    Note - set bias=False for lin.model
+
+    :param G:             list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
+    :param true_weights:  array of shape (n_clusters, n_features), true weight vector for each cluster
+
+    """
+
     dist = np.zeros((len(G), len(true_weights)))
     for i in range(len(G)):
         model_params = G[i]['model'].get_params()
         dist[i] = np.sum((model_params - true_weights)**2, axis=1)
 
-    plt.title("Squared Euclidian distance between learnt weight vector of a node and true vectors of 3 clusters")
+    plt.title("Sq. Eucl. dist. b/ learnt weight vector of a node and true vectors of 3 clusters")
     plt.imshow(dist, cmap="coolwarm")
     plt.colorbar()
     plt.show()
     
-# Plot MSE of predictions on a shared test set MSE(node_i, node_j)
 def compute_mse(preds, n_clusters):
+
+    """
+
+    Plot MSE of predictions on a shared test set MSE (node_i, node_j)
+
+
+
+    """
     nn = preds.shape[1]
     n_ds = int(nn / n_clusters)
     mse_node = np.zeros((nn,nn))
@@ -47,7 +64,7 @@ def compute_mse(preds, n_clusters):
             mse_aver[i,j] = np.mean(mse_node[n_ds*i:n_ds*i+n_ds, n_ds*j:n_ds*j+n_ds])
     return mse_node, mse_aver
 
-def plot_preds_similarity(A, preds_list, n_clusters):
+def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
     
     fig, axs = plt.subplots(1, 5, figsize=(10,6))
     # Plot edges weights
@@ -67,8 +84,8 @@ def plot_preds_similarity(A, preds_list, n_clusters):
     # Set titles
     axs[0].set_title("Edge weghts (matrix A)")
     axs[1].set_title("Iteration 1")
-    axs[2].set_title("Iteration 500")
-    axs[3].set_title("Iteration 1000")
+    axs[2].set_title("Iteration " + str(int(n_iters/2)))
+    axs[3].set_title("Iteration " + str(int(n_iters)))
     axs[4].set_title("Average MSE over clusters")
 
     fig.colorbar(im1, ax=axs[0], shrink=0.6, location='bottom')
@@ -85,17 +102,22 @@ def iter(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, verbose=False):
     
     """
     
-    :param G: list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes.
-    :param pooled_G: list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster. 
-    :iters: number of iterations or updates of the local model.
-    :regularizer_term: scaling factor for GTV term.
-    
+    :param G                : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes.
+    :param pooled_G         : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster. 
+    :param iters            : number of iterations or updates of the local model.
+    :param regularizer_term : scaling factor for GTV term.
+
+    :out preds_list         : list of arrays (m_shared, n_nodes), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    :out mse_train          : array (n_nodes,), local training MSE error for each node
+    :out mse_val            : array (n_nodes,), local validation MSE error for each node
+    :out mse_val_pooled     : array (n_nodes,), local validation MSE error for each node incurred by corresponding "pooled" model
+
     """
     
     n_nodes = len(G)                                # number of nodes in a graph
     m_shared = G[0]["ds_shared"][0].shape[0]        # sample size of the shared ds
     nodes_preds = np.zeros((m_shared, n_nodes))     # init predictions on a shared ds
-    preds_list = []                                 # save predictions on a test set for iter 1, 500, 1000 for plotting
+    preds_list = []                                 # save predictions on a test set for iter 1, n_iters/2, n_iters for plotting
     
     for i in range(n_iters):
         # Update local models
@@ -172,7 +194,7 @@ def train(config, models, models_pooled, verbose=False, plot_preds=True, plot_w_
 
     # Plotting
     if plot_preds:
-        plot_preds_similarity(A, preds_list, n_clusters)
+        plot_preds_similarity(A, preds_list, n_clusters, n_iters)
 
     if plot_w_dist:
         plot_weight_dist(G, true_weights)

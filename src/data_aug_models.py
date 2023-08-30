@@ -1,6 +1,8 @@
 
 import math
 import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
 from tensorflow import keras
 from tensorflow.keras import layers
 import torch
@@ -46,6 +48,7 @@ class Data_augmentation():
         return X_aug, y_aug.reshape(-1,1), sample_weight
 
 #-----------------------PYTORCH MODELS-------------------------------#
+
 class Optimize_aug(torch.nn.Module, Data_augmentation):
     def __init__(self):
         torch.nn.Module.__init__(self)
@@ -129,8 +132,6 @@ class Linreg_Torch_aug(Optimize_aug):
 
 #-----------------------SKLEARN MODELS-------------------------------#
 
-from sklearn.linear_model import LinearRegression
-
 class Linreg_Sklearn(LinearRegression, Data_augmentation):
     def __init__(self, **kwargs):
         LinearRegression.__init__(self, **kwargs)
@@ -161,7 +162,7 @@ class Linreg_Sklearn(LinearRegression, Data_augmentation):
 
         return loss
 
-from sklearn.tree import DecisionTreeRegressor
+
 
 class DTReg(DecisionTreeRegressor, Data_augmentation):
     def __init__(self, **kwargs):
@@ -185,7 +186,6 @@ class DTReg(DecisionTreeRegressor, Data_augmentation):
         
         return loss
 
-
 #-----------------------KERAS MODELS-------------------------------#
 
 class MLP_Keras(Data_augmentation):
@@ -207,7 +207,6 @@ class MLP_Keras(Data_augmentation):
     def predict(self, x):
         return self.model(x).numpy()
 
-        
     def update(self, ds_local, ds_test,  pred_test, A, regularizer_term):
         
         # Get augmented dataset
