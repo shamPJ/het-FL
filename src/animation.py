@@ -1,5 +1,4 @@
-
-# from data_aug_models import Linreg_Torch_aug, Linreg_Sklearn, DTReg, MLP_Keras
+from data_aug_models import Linreg_Torch_aug, Linreg_Sklearn, DTReg, MLP_Keras
 from generate_data import get_shared_data
 import numpy as np
 import matplotlib.pyplot as plt
@@ -125,7 +124,7 @@ N_FEATURES = 1
 N_SAMPLES  = 100
 
 # Params training
-LR    = 0.03
+LR    = 0.005
 ITERS = 1000
 REG   = [0, 0.1, 1]
 
@@ -143,7 +142,8 @@ G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
 # Compute FL algo output for different regularization value
 preds_plots = []
 for reg in REG:
-    models = [Linreg_Torch(n_features=N_FEATURES, lr=LR) for i in range(3)]
+    # models
+    models = [Linreg_Torch(n_features=N_FEATURES, lr=LR), MLP_Torch(N_FEATURES,  lr=LR), DTReg(max_depth=3, min_samples_split=5)]
     G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
     preds_plots.append(train(G, A, iters=ITERS, regularizer_term=reg))
 
@@ -180,5 +180,5 @@ def animate(i):
 # call the animator.  blit=True means only re-draw the parts that have changed.
 anim = animation.FuncAnimation(fig, animate, frames=500, interval=10)
 
-anim.save('src/simpsons.mp4', fps=25)
+anim.save('src/simpsons_het.mp4', fps=25)
 

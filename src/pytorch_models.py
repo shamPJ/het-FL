@@ -114,14 +114,14 @@ class Linreg_Torch(Optimize):
         return params
 
 class MLP_Torch(Optimize):
-    def __init__(self, n_features, lr=0.001):
+    def __init__(self, n_features, n_units = 15, lr=0.001):
         Optimize.__init__(self)
         
         # Define model
         self.model = torch.nn.Sequential(
-                    torch.nn.Linear(n_features, 10),
+                    torch.nn.Linear(n_features,  n_units),
                     torch.nn.ReLU(),
-                    torch.nn.Linear(10, 1)
+                    torch.nn.Linear(n_units, 1)
         )
 
         # Define Loss and Optimizer
