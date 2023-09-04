@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import torch 
 
@@ -12,7 +13,6 @@ def fwd_check(ds, model):
     out = model.predict(X)
     
     np.testing.assert_allclose(out.reshape(-1,), out_manual.reshape(-1,), rtol=1e-05)
-    
     
 def bckwd_check(ds, ds_test, pred_test, A, model):
     # Check manually bckw step [only linear model!]
@@ -57,3 +57,191 @@ def bckwd_check(ds, ds_test, pred_test, A, model):
     # gradients
     dw_torch = model.model.weight.grad.detach().numpy().reshape(-1,1)
     np.testing.assert_allclose(dw_torch, dw, rtol=1e-05)
+
+#==================================== PLOTTING SINGLE EXPERIMENT ======================================#
+
+def plot_weight_dist(G, true_weights):
+
+    """
+    
+    Compute similarity (sq. L2 distance) between learnt weight vector of a pytorch linear model and true weight vector for all clusters
+    and plot results.
+
+    Note - set bias=False for linear model
+
+    :param G            : list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
+    :param true_weights : array of shape (n_clusters, n_features), true weight vector for each cluster
+
+    :out dist           : array of shape (n_nodes, n_clusters)
+
+    """
+
+    n_nodes, n_clusters = len(G), len(true_weights)
+    dist = np.zeros((n_nodes, n_clusters))
+
+    for i in range(n_nodes):
+        model_params = G[i]['model'].get_params()
+        dist[i] = np.sum((model_params - true_weights)**2, axis=1)
+
+    plt.title("Sq. L2 dist. b/ learnt weight vector of a node and true vectors of 3 clusters")
+    plt.imshow(dist, cmap="coolwarm")
+    plt.colorbar()
+    plt.show()
+
+    return dist
+    
+def compute_mse(preds, n_clusters):
+
+    """
+
+    Compute (i) MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j) and (ii) average these MSE's by clusters
+
+    :param preds      : array of shape (m_shared, n_nodes), predictions of local models on the shared dataset
+    :param n_clusters : int, number of true clusters
+
+    :out mse_node     : array of shape (n_nodes, n_nodes), MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j)
+    :out mse_aver     : array of shape (n_clusters, n_clusters), average MSE's (by clusters)
+
+    """
+
+    n_nodes  = preds.shape[1]               # number of nodes
+    n_ds     = int(n_nodes / n_clusters)    # number of datasets per cluster (clusters have same number of ds)
+    mse_node = np.zeros((n_nodes, n_nodes)) # array to store MSE
+
+    for n in range(n_nodes):
+        node_pred   = preds[:,n].reshape(-1,1)
+        mse_node[n] = np.mean((node_pred - preds)**2, axis=0) # MSE of predictions on a shared ds of node `n` and each of other nodes
+
+    mse_aver = np.zeros((n_clusters, n_clusters)) # Averaged MSE's (by cluster) of predictions on a shared ds 
+
+    for i in range(n_clusters):
+        for j in range(n_clusters):
+            mse_aver[i,j] = np.mean(mse_node[n_ds*i:n_ds*i+n_ds, n_ds*j:n_ds*j+n_ds])
+    
+    return mse_node, mse_aver
+
+def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
+
+    """
+
+    Plot how similar (MSE) predictions of the nodes on shared ds. 
+    First supblot is adjacency matrix, next matrices are MSE values on 1st, middle and last iterations. The last matrix is average of MSE's by clusters.
+    Datasets in diagonal blocks are from the same cluster (thus MSE expected to be smaller).
+
+    :param A          : np array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out.
+    :param preds_list : list of arrays (m_shared, n_nodes), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    :param n_clusters : int, number of true clusters
+    :param n_iters    : int, number of iterations
+
+    """
+    
+    fig, axs = plt.subplots(1, 5, figsize=(10,6))
+    # Plot edges weights
+    im1 = axs[0].imshow(A, cmap="RdBu")
+    
+    for i, preds in enumerate(preds_list):
+        mse_node, _ = compute_mse(preds, n_clusters)
+        # Plot matrix of MSE values on shared test dataset of (node_i, node_j) for all nodes in G
+        im = axs[i+1].imshow(mse_node, cmap="coolwarm")
+        fig.colorbar(im, ax=axs[i+1], shrink=0.6, location='bottom')
+        
+    # Same but MSE averaged by cluster for last iter
+    _, mse_aver = compute_mse(preds_list[-1], n_clusters)
+    im5 = axs[-1].imshow(mse_aver, cmap="coolwarm")
+    
+    # Set titles
+    axs[0].set_title("Edge weghts (matrix A)")
+    axs[1].set_title("Iteration 1")
+    axs[2].set_title("Iteration " + str(int(n_iters/2)))
+    axs[3].set_title("Iteration " + str(int(n_iters)))
+    axs[4].set_title("Average MSE over clusters")
+
+    fig.colorbar(im1, ax=axs[0], shrink=0.6, location='bottom')
+    fig.colorbar(im5, ax=axs[4], shrink=0.6, location='bottom')
+
+    fig.tight_layout()
+    plt.show()
+
+
+#==================================== PLOTTING HYPERPARAMS ======================================#
+
+def mse_mean_std(mse_local_list):
+
+    """
+
+    Average MSE values (across all repetitions and nodes). STD is computed across `repeat_times`.
+    `k` is the number of hyperparams combinations. 
+
+    :param mse_local_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing training or validation loss for repeat_times runs for each node in the graph. 
+
+    :out mse_local_mean   : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    :out mse_local_std    : list with k elements (floats). Corresponding standard deviation. 
+
+    """
+
+    mse_local_mean, mse_local_std = [], []
+
+    for mse_local in mse_local_list:
+        # compute average across all dims
+        mse_local_mean.append(np.mean(mse_local))
+        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
+        std = np.std(np.mean(mse_local, axis=1))
+        mse_local_std.append(std)
+
+    return mse_local_mean, mse_local_std
+
+def mse_mean_std_scaled(mse_list, mse_pooled_list):
+    
+    """
+
+    Scaled average MSE values (across all repetitions and nodes). STD is computed across `repeat_times`.
+    `k` is the number of hyperparams combinations. 
+
+    :param mse_list        : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing training loss for repeat_times runs for each node in the graph. 
+    :param mse_pooled_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing validation loss for repeat_times runs for each cluster model on the corresponding local node's val ds. 
+
+    :out mse_mean          : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    :out mse_std           : list with k elements (floats). Corresponding standard deviation. 
+
+    """
+    
+    mse_mean, mse_std = [], []
+
+    for mse, mse_pooled in zip(mse_list, mse_pooled_list):
+        
+        # scale local MSE vals
+        mse_scaled = mse / mse_pooled
+        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
+        std = np.std(np.mean(mse_scaled, axis=1))
+
+        # compute average across all dims
+        mse_mean.append(np.mean(mse_scaled))
+        mse_std.append(std)
+
+    return mse_mean, mse_std
+
+def plot_mse(ax, mse_mean, mse_std, reg_term_list, n_samples_list):
+
+    """
+    
+    :param ax             : matplotlib.axes object
+    :param mse_mean       : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    :param mse_std        : list with k elements (floats). Corresponding standard deviation. 
+    :params reg_term_list : list with k elements (floats). Penalty term values used in `iter_params` func.
+    :param n_samples_list : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
+
+    :out ax               : matplotlib.axes object with plots
+
+    """
+    
+    n_regs = len(reg_term_list)
+    n_sizes = len(n_samples_list)
+    
+    for i in range(n_regs):
+
+        y = mse_mean[i*n_sizes:i*n_sizes+n_sizes]
+        y_err = mse_std[i*n_sizes:i*n_sizes+n_sizes]
+        ax.errorbar(n_samples_list, y, yerr=y_err, label='Reg. term ' + str(reg_term_list[i]), lolims=True, linestyle='--')
+
+    ax.set_xticks(n_samples_list)
+    return ax
