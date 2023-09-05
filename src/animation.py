@@ -12,7 +12,7 @@ def simulate_simpson(n_ds=3, n_samples=100, r=0.6, difference=3):
 
     """
 
-    Finction to create dataset for Simpson's paradox. Re-written in Python based on https://github.com/easystats/bayestestR/blob/HEAD/R/simulate_simpson.R
+    Function to create dataset for Simpson's paradox. Re-written in Python based on https://github.com/easystats/bayestestR/blob/HEAD/R/simulate_simpson.R
 
     :param n_ds:        number of local datasets 
     :param n_samples:   number of samples in a local dataset
@@ -143,7 +143,7 @@ G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
 preds_plots = []
 for reg in REG:
     # models
-    models = [Linreg_Torch(n_features=N_FEATURES, lr=LR), MLP_Torch(N_FEATURES,  lr=LR), DTReg(max_depth=3, min_samples_split=5)]
+    models = [Linreg_Torch(n_features=N_FEATURES, lr=LR), MLP_Torch(N_FEATURES,  n_units=15, lr=LR), DTReg(max_depth=3, min_samples_split=5)]
     G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
     preds_plots.append(train(G, A, iters=ITERS, regularizer_term=reg))
 

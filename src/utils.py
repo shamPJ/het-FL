@@ -1,3 +1,4 @@
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import torch 
@@ -245,3 +246,47 @@ def plot_mse(ax, mse_mean, mse_std, reg_term_list, n_samples_list):
 
     ax.set_xticks(n_samples_list)
     return ax
+
+def save_and_plot(exp_results, model_hyperparams, reg_term_list, n_samples_list, name):
+
+    """
+
+    Save computed average MSE's and STD's for experiment with different model hyperparams, regularization and local dataset size.
+    
+    :param             : 
+    :param        :  
+    :param        : 
+    :params reg_term_list : list with k elements (floats). Penalty term values used in `iter_params` func.
+    :param n_samples_list : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
+
+    :out ax               : matplotlib.axes object with plots
+
+    """
+
+    with open('out/img/' + name.replace(' ', '_') + '.json', 'w') as f:
+        json.dump(exp_results, f)
+
+    titles = ['Train ds', 'Validation ds']
+
+    fig, axes = plt.subplots(len(model_hyperparams), 2, sharey=True, sharex=True, figsize=(8,8))
+
+    for i in range(len(model_hyperparams)):
+        # get experiment results for ith value of model hyperparam
+        plot_list = exp_results[i]
+        axs = axes[i]
+
+        for ax, data, title in zip(axs, plot_list, titles):
+            mse = data[0]
+            mse_std = data[1]
+            plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
+            ax.set_title(title + ' lrate = ' + str(model_hyperparams[i]))
+    
+    [axs[0].set_ylabel ('Loss') for axs in axes]
+
+    axes[-1,0].set_xlabel ('Training ds size')
+    axes[-1,1].set_xlabel ('Training ds size')
+
+    plt.legend()
+    fig.tight_layout()
+    plt.savefig("out/img/" + name.replace(' ', '_') + ".png")
+    plt.show()

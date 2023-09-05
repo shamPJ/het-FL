@@ -11,7 +11,7 @@ from pytorch_models import Linreg_Torch, MLP_Torch
 import time
 from tqdm import tqdm
 from train import train
-from utils import plot_weight_dist, mse_mean_std, mse_mean_std_scaled, plot_mse
+from utils import plot_weight_dist, mse_mean_std, mse_mean_std_scaled, save_and_plot
 
 plt.style.use('ggplot')
 
@@ -180,45 +180,37 @@ config = {
 
 #======================== Pytorch Linear - with bias========================#
 
-# Create linear pytorch models
-models        = [Linreg_Torch(n_features) for i in range(n_clusters*n_ds)]
-models_pooled = [Linreg_Torch(n_features) for i in range(n_clusters)]
+lrates = [0.001, 0.01, 0.1]
+mse_lrates = []
+mse_lrates_scaled = []
+
+for lrate in lrates:
+    # Create linear pytorch models
+    models = [Linreg_Torch(n_features, lr=lrate) for i in range(n_clusters*n_ds)]
+    models_pooled = [Linreg_Torch(n_features, lr=lrate) for i in range(n_clusters)]
     
-config['models']        = models
-config['models_pooled'] = models_pooled
-config['noise_val']     = 1
-config['file_name']     = 'Linreg_Torch'
+    config['models']        = models
+    config['models_pooled'] = models_pooled
+    config['noise_val']     = 1
+    config['file_name']     = 'Linreg_Torch_lrate_' + str(lrate)
+    
+    nodes_preds, mse_train, mse_val, mse_val_pooled, _ = iter_params(config)
+    
+    mse_t, mse_std_t = mse_mean_std(mse_train)
+    mse_v, mse_std_v = mse_mean_std(mse_val)
+    
+    mse_t_scaled, mse_std_t_scaled = mse_mean_std_scaled(mse_train, mse_val_pooled)
+    mse_v_scaled, mse_std_v_scaled = mse_mean_std_scaled(mse_val, mse_val_pooled)
+    
+    # for each learning rate append list of 2 tuples with train/val average MSE and std
+    mse_lrates.append( [(mse_t, mse_std_t), (mse_v, mse_std_v)] )
+    mse_lrates_scaled.append( [(mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled)] )
 
-nodes_preds, mse_train, mse_val, mse_val_pooled, _ = iter_params(config)
+# Save and plot computed averages and std
+timestamp = time.strftime("%Y%m%d-%H%M%S")
+save_and_plot(mse_lrates, lrates, reg_term_list, n_samples_list, name='Linreg_Torch_lrate_'+timestamp)
+save_and_plot(mse_lrates_scaled, lrates, reg_term_list, n_samples_list, name='Linreg_Torch_lrate_scaled_'+timestamp)
 
-# Plot raw mse vals
-mse_t, mse_std_t = mse_mean_std(mse_train)
-mse_v, mse_std_v = mse_mean_std(mse_val)
-
-mse = [ [(mse_t, mse_std_t), (mse_v, mse_std_v)] ]
-
-titles = ['Train ds', 'Validation ds']
-
-fig, axs = plt.subplots(1, 2, sharey=True, sharex=True, figsize=(8,3))
-
-for i in range(1):
-    plot_list = mse[i]
-
-    for ax, data, title in zip(axs, plot_list, titles):
-        mse = data[0]
-        mse_std = data[1]
-        ax = plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
-        ax.set_title(title)
-
-axs[0].set_ylabel ('MSE')
-axs[0].set_xlabel ('Training ds size')
-axs[1].set_xlabel ('Training ds size')
-
-plt.legend()
-fig.tight_layout()
-timestamp     = time.strftime("%Y%m%d-%H%M%S")
-plt.savefig('out/' +config['file_name']+ '_' + timestamp + ".png")
-plt.show()
 
 
 
