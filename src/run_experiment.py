@@ -27,10 +27,10 @@ def run_exp(config, models, models_pooled, verbose=False, plot_preds=True, plot_
     """
     
     # Get data and training params
-    ds_train, ds_val, ds_shared, cluster_labels, true_weights = config['ds_train'], config['ds_val'], config['ds_shared'], config['cluster_labels'], config['true_weights']
+    ds_train, ds_val, cluster_labels, true_weights = config['ds_train'], config['ds_val'], config['cluster_labels'], config['true_weights']
     n_clusters, n_iters, regularizer_term = config['n_clusters'], config['n_iters'], config['regularizer_term']
     
-    G        = build_graph(ds_train, ds_val, ds_shared, models, cluster_labels) # Build a graph with nodes {model, dataset local, dataset test}
+    G        = build_graph(ds_train, ds_val, models, cluster_labels) # Build a graph with nodes {model, dataset local, dataset test}
     G_pooled = build_graph_pooled(ds_train, ds_val, models_pooled, n_clusters=n_clusters) # Build a graph where local ds from one cluster are pooled
     A        = build_edges(G, cluster_labels)  # Build edges
 
@@ -48,7 +48,6 @@ def run_exp(config, models, models_pooled, verbose=False, plot_preds=True, plot_
 
 # Experiment's configuration
 n_clusters, n_ds, n_samples, n_features = 3, 5, 100, 10
-ds_shared = get_shared_data(n_samples, n_features)
 
 # Create a list of n_clusters*n_ds local datasets. 
 ds_train, ds_val, cluster_labels, true_weights = get_data(n_clusters, n_ds, n_samples, n_features)
@@ -64,7 +63,6 @@ config = {
         'n_features':       n_features,
         'ds_train':         ds_train, 
         'ds_val':           ds_val, 
-        'ds_shared':        ds_shared, 
         'cluster_labels':   cluster_labels,
         'true_weights':     true_weights, 
         'n_iters':          N_ITERS,
@@ -73,10 +71,10 @@ config = {
 
 #========================Pytorch Linear - no bias========================#
 
-models = [Linreg_Torch(n_features, bias=False) for i in range(n_clusters*n_ds)]
-models_pooled = [Linreg_Torch(n_features, bias=False) for i in range(n_clusters)]
+# models = [Linreg_Torch(n_features, bias=False) for i in range(n_clusters*n_ds)]
+# models_pooled = [Linreg_Torch(n_features, bias=False) for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True, plot_w_dist=True)
+# preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True, plot_w_dist=True)
 
 #========================Pytorch Linear - with bias========================#
 
@@ -87,32 +85,32 @@ preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_
 
 #========================Pytorch MLP========================#
 
-models = [MLP_Torch(n_features) for i in range(n_clusters*n_ds)]
-models_pooled = [MLP_Torch(n_features) for i in range(n_clusters)]
+# models = [MLP_Torch(n_features) for i in range(n_clusters*n_ds)]
+# models_pooled = [MLP_Torch(n_features) for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
+# preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
 
-#========================Pytorch Linear - with data augmentation========================#
+# #========================Pytorch Linear - with data augmentation========================#
 
-models = [Linreg_Torch_aug(n_features) for i in range(n_clusters*n_ds)]
-models_pooled = [Linreg_Torch_aug(n_features) for i in range(n_clusters)]
+# models = [Linreg_Torch_aug(n_features) for i in range(n_clusters*n_ds)]
+# models_pooled = [Linreg_Torch_aug(n_features) for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
+# preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
 
-#========================Sklearn LinReg data augmentation========================#
+# #========================Sklearn LinReg data augmentation========================#
 
-# Create models
-models = [Linreg_Sklearn() for i in range(n_clusters*n_ds)]
-models_pooled = [Linreg_Sklearn() for i in range(n_clusters)]
+# # Create models
+# models = [Linreg_Sklearn() for i in range(n_clusters*n_ds)]
+# models_pooled = [Linreg_Sklearn() for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
+# preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
 
-#========================Sklearn DT data augmentation========================#
+# #========================Sklearn DT data augmentation========================#
 
-# Create models
-models = [DTReg(max_depth=5) for i in range(n_clusters*n_ds)]
-models_pooled = [DTReg(max_depth=5) for i in range(n_clusters)]
+# # Create models
+# models = [DTReg(max_depth=5) for i in range(n_clusters*n_ds)]
+# models_pooled = [DTReg(max_depth=5) for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
+# preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
 
 

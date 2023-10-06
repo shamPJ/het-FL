@@ -97,7 +97,7 @@ def compute_mse(preds, n_clusters):
 
     Compute (i) MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j) and (ii) average these MSE's by clusters
 
-    :param preds      : array of shape (m_shared, n_nodes), predictions of local models on the shared dataset
+    :param preds      : array of shape (n_nodes, m_shared), predictions of local models on the shared dataset
     :param n_clusters : int, number of true clusters
 
     :out mse_node     : array of shape (n_nodes, n_nodes), MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j)
@@ -105,13 +105,13 @@ def compute_mse(preds, n_clusters):
 
     """
 
-    n_nodes  = preds.shape[1]               # number of nodes
+    n_nodes  = preds.shape[0]               # number of nodes
     n_ds     = int(n_nodes / n_clusters)    # number of datasets per cluster (clusters have same number of ds)
     mse_node = np.zeros((n_nodes, n_nodes)) # array to store MSE
 
     for n in range(n_nodes):
-        node_pred   = preds[:,n].reshape(-1,1)
-        mse_node[n] = np.mean((node_pred - preds)**2, axis=0) # MSE of predictions on a shared ds of node `n` and each of other nodes
+        node_pred   = preds[n, :].reshape(1,-1)
+        mse_node[n] = np.mean((node_pred - preds)**2, axis=1) # MSE of predictions on a shared ds of node `n` and each of other nodes
 
     mse_aver = np.zeros((n_clusters, n_clusters)) # Averaged MSE's (by cluster) of predictions on a shared ds 
 
@@ -130,7 +130,7 @@ def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
     Datasets in diagonal blocks are from the same cluster (thus MSE expected to be smaller).
 
     :param A          : np array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out.
-    :param preds_list : list of arrays (m_shared, n_nodes), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    :param preds_list : list of arrays (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
     :param n_clusters : int, number of true clusters
     :param n_iters    : int, number of iterations
 

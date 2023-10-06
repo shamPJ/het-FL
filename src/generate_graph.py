@@ -47,7 +47,7 @@ def concat(ds):
 
 #========================MAIN FUNCS========================#
 
-def build_graph(ds_train, ds_val, ds_shared, models, cluster_labels):
+def build_graph(ds_train, ds_val, models, cluster_labels):
 
     """
 
@@ -55,7 +55,6 @@ def build_graph(ds_train, ds_val, ds_shared, models, cluster_labels):
 
     :param ds_train:       list of (n_clusters*n_ds) local train datasets of sample size n_samples (see function `get_data()`)
     :param ds_val:         list of (n_clusters*n_ds) local validation datasets of sample size 100
-    :param ds_shared:      tuple (X, y), shared dataset (D^(test) in the paper)
     :param models:         list of (n_clusters*n_ds) local models
     :param cluster_labels: list of (n_clusters*n_ds) cluster assignments for each local dataset 
 
@@ -64,7 +63,7 @@ def build_graph(ds_train, ds_val, ds_shared, models, cluster_labels):
     """
     G = []
     for ds_t, ds_v, model, c in zip(ds_train, ds_val, models, cluster_labels):
-        G.append({ "model": model, "ds_train": ds_t, "ds_val": ds_v, "ds_shared": ds_shared, "cluster_label": c}) 
+        G.append({ "model": model, "ds_train": ds_t, "ds_val": ds_v, "cluster_label": c}) 
         
     return G
 

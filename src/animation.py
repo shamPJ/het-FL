@@ -6,6 +6,7 @@ from matplotlib import animation
 from pytorch_models import Linreg_Torch, MLP_Torch
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+import seaborn as sns
 
  
 def simulate_simpson(n_ds=3, n_samples=100, r=0.6, difference=3):
@@ -134,8 +135,13 @@ print(f'Shape of ds_train dataset feature matrix {ds_train[0][0].shape}')
 print(f'Shape of ds_train dataset label vector {ds_train[0][1].shape}')
 print(f'Shape of ds_plot dataset {ds_plot[0].shape}')
 
+# Compute sample variance
+samples = [ds[0] for ds in ds_train]
+samples_concat = np.concatenate(samples)
+var_ds = np.var(samples_concat)
+
 # Create shared dataset
-ds_shared = get_shared_data(n_samples=N_SAMPLES, n_features=N_FEATURES)
+ds_shared = get_shared_data(n_samples=N_SAMPLES, n_features=N_FEATURES, var=var_ds)
 models = [Linreg_Torch(n_features=N_FEATURES, lr=LR) for i in range(3)]
 G, A = build_simpson_graph(ds_train, ds_plot, ds_shared, models)
 
@@ -166,19 +172,26 @@ for ax, reg in zip(axs, REG):
         ax.plot(x_plot, y_plot, 'k--')
         # Plot local dataset
         ax.scatter(X, y)
-
+    
+    #ax.scatter(ds_shared[0], np.zeros(( ds_shared[0].shape[0]))-10, marker='x', alpha=0.6)
+    print(ds_shared[0].shape)
+    ax_ = ax.twinx()
+    ax_.set_ylim(0,1) 
+    ax.set_xlim(-30,30) 
+    sns.kdeplot(ds_shared[0].reshape(-1,), ax=ax_)
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_title("Regularization " + str(reg))
+plt.show()
 
-def animate(i): 
-    for preds_plot, ln in zip(preds_plots, lns):
-        ds_pred = preds_plot[i]
-        for x_plot, y_plot, line in zip(ds_plot, ds_pred, ln):
-            line.set_data(x_plot, y_plot)
-    return ax
+# def animate(i): 
+#     for preds_plot, ln in zip(preds_plots, lns):
+#         ds_pred = preds_plot[i]
+#         for x_plot, y_plot, line in zip(ds_plot, ds_pred, ln):
+#             line.set_data(x_plot, y_plot)
+#     return ax
 
-# call the animator.  blit=True means only re-draw the parts that have changed.
-anim = animation.FuncAnimation(fig, animate, frames=500, interval=10)
+# # call the animator.  blit=True means only re-draw the parts that have changed.
+# anim = animation.FuncAnimation(fig, animate, frames=500, interval=10)
 
-anim.save('src/simpsons_het.mp4', fps=25)
+# anim.save('src/simpsons_het_same_sample_var.mp4', fps=25)
 

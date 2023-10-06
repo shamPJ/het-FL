@@ -29,34 +29,38 @@ class Optimize(torch.nn.Module):
         nn - number of nodes
         m' - sample size of shared test data
         
-        :param ds_train: list of (n_clusters*n_ds) local train datasets of sample size n_samples
-        :param ds_shared: shared test dataset
-        :param nodes_preds: predictions for ds_shared of all nodes, array of size (m', nn)
-        :param A: row of a symmetric matrix A (weights of edges), array of size (nn,); A_ii=0 (zero diagonal)
-        :param regularizer_term: lambda, float number
+        :param ds_train         : list of (n_clusters*n_ds) - local train datasets of sample size n_samples
+        :param ds_shared        : array of shape (k, m', n_features) -  shared test dataset(s); 
+                                  k=1 when all nodes share preds on the same dataset or k = n_nodes (=n_clusters*n_ds)
+        :param nodes_preds      : array of size (nn, m') - predictions for ds_shared of all nodes, 
+        :param A                : array of size (nn,) - row of a symmetric matrix A (weights of edges); A_ii=0 (zero diagonal)
+        :param regularizer_term : float number - lambda, reg.param.
         
         """
         
         X, y = ds_train[0], ds_train[1]
-        X_shared, _ = ds_shared[0], ds_shared[1]
+        k, m_shared = ds_shared.shape[0], ds_shared.shape[1]
 
         # Convert numpy arrays to torch tensors
         X, y = torch.FloatTensor(X), torch.FloatTensor(y)
-        X_shared = torch.FloatTensor(X_shared)
+        ds_shared = torch.FloatTensor(ds_shared)
         
-        A = torch.from_numpy(A).float().reshape(-1,1)   # shape (nn,1)
-        nodes_preds = torch.from_numpy(nodes_preds).float() # shape (m',nn)
+        A = torch.from_numpy(A).float().reshape(-1,1)   # reshape to (nn,1)
+        nodes_preds = torch.from_numpy(nodes_preds).float() # shape (nn, m')
 
         # Get predictions for local and shared test ds
         pred = self.model(X)
-        pred_shared = self.model(X_shared)  # shape (m',1)
+        pred_shared = self.model(ds_shared.reshape(k*m_shared,-1))  # out shape (k*m',1)
+        print("out shape", pred_shared.shape)
+        pred_shared = pred_shared.reshape(k, m_shared)
         
         # Set all gradient values to zeros
         self.model.zero_grad()  
         
         # Compute loss
         loss_local = self.criterion(y, pred)
-        loss_GTV = torch.mean( ((pred_shared - nodes_preds)**2)@A )
+        loss_per_node  = torch.mean((pred_shared - nodes_preds)**2, axis=1) # out shape (k,)
+        loss_GTV = torch.mean(loss_per_node.reshape(-1,1)*A)
         loss = loss_local + (regularizer_term/2)*loss_GTV
 
         # Backpropagate the gradients
