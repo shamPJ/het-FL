@@ -1,4 +1,4 @@
-from data_aug_models import Linreg_Torch_aug, Linreg_Sklearn, DTReg, MLP_Keras
+# from data_aug_models import Linreg_Torch_aug, Linreg_Sklearn, DTReg, MLP_Keras
 from generate_data import get_data, get_shared_data
 from generate_graph import build_edges, build_graph, build_graph_pooled
 from pytorch_models import Linreg_Torch, MLP_Torch
@@ -11,30 +11,33 @@ def run_exp(config, models, models_pooled, verbose=False, plot_preds=True, plot_
 
     Build graph and run training loop.
 
-    :param config        : dict, experiment parameters (keys: 'n_clusters', 'n_ds', 'n_samples', 'n_features', 'ds_train', 'ds_val', 'ds_shared',
-                                                        'cluster_labels', 'true_weights', 'n_iters', 'regularizer_term')
-    :param models        : list of len(n_nodes), pytorch, sklearn or keras local models 
-    :param models_pooled : list of len(n_clusters), pytorch, sklearn or keras 'oracle' or 'pooled' models 
-    :param verbose       : boolean, flag to control printing statements during training
-    :param plot_preds    : boolean, flag to control plotting of MSE matrices 
-    :plot_w_dist         : boolean, flag to control plotting of weight vectors sq. L2 difference matrix
+    Args:
+    : config        : dict, experiment params (keys: 'n_clusters', 'n_ds', 'n_samples', 'n_features', 'ds_train', 'ds_val',
+                                                    'cluster_labels', 'true_weights', 'n_iters', 'regularizer_term', 'ds_shared_mode')
+    : models        : list of len(n_nodes), pytorch, sklearn or keras local models 
+    : models_pooled : list of len(n_clusters), pytorch, sklearn or keras 'oracle' or 'pooled' models 
+    : verbose       : boolean, flag to control printing statements during training
+    : plot_preds    : boolean, flag to control plotting of MSE matrices 
+    : plot_w_dist   : boolean, flag to control plotting of weight vectors sq. L2 difference matrix
 
-    :out preds_list      : list of arrays (m_shared, n_nodes), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
-    :out mse_train       : array (n_nodes,), local training MSE error for each node
-    :out mse_val         : array (n_nodes,), local validation MSE error for each node
-    :out mse_val_pooled  : array (n_nodes,), local validation MSE error for each node incurred by corresponding "pooled" model
+    Output:
+    : preds_list     : list of arrays (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    : mse_train      : array (n_nodes,), local training MSE error for each node
+    : mse_val        : array (n_nodes,), local validation MSE error for each node
+    : mse_val_pooled : array (n_nodes,), local validation MSE error for each node incurred by corresponding "pooled/ oracle" model
 
     """
     
     # Get data and training params
     ds_train, ds_val, cluster_labels, true_weights = config['ds_train'], config['ds_val'], config['cluster_labels'], config['true_weights']
     n_clusters, n_iters, regularizer_term = config['n_clusters'], config['n_iters'], config['regularizer_term']
-    
-    G        = build_graph(ds_train, ds_val, models, cluster_labels) # Build a graph with nodes {model, dataset local, dataset test}
+    ds_shared_mode = config['ds_shared_mode']
+
+    G        = build_graph(ds_train, ds_val, models, cluster_labels) # Build a graph with nodes as dict containing local train/ val ds, model and cluster assignment
     G_pooled = build_graph_pooled(ds_train, ds_val, models_pooled, n_clusters=n_clusters) # Build a graph where local ds from one cluster are pooled
     A        = build_edges(G, cluster_labels)  # Build edges
 
-    preds_list, mse_train, mse_val, mse_val_pooled = train(G, A, G_pooled, n_iters=n_iters, regularizer_term=regularizer_term, verbose=verbose)
+    preds_list, mse_train, mse_val, mse_val_pooled = train(G, A, G_pooled, n_iters=n_iters, regularizer_term=regularizer_term, ds_shared_mode=ds_shared_mode, verbose=verbose)
 
     # Plotting
     if plot_preds:
@@ -66,7 +69,8 @@ config = {
         'cluster_labels':   cluster_labels,
         'true_weights':     true_weights, 
         'n_iters':          N_ITERS,
-        'regularizer_term': REG
+        'regularizer_term': REG,
+        'ds_shared_mode': 'const'
         }
 
 #========================Pytorch Linear - no bias========================#
@@ -81,7 +85,7 @@ config = {
 models = [Linreg_Torch(n_features) for i in range(n_clusters*n_ds)]
 models_pooled = [Linreg_Torch(n_features) for i in range(n_clusters)]
 
-preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=True)
+preds_list, mse_train, mse_val, mse_val_pooled = run_exp(config, models, models_pooled, verbose=False, plot_preds=False)
 
 #========================Pytorch MLP========================#
 

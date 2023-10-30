@@ -51,14 +51,14 @@ def build_graph(ds_train, ds_val, models, cluster_labels):
 
     """
 
-    Function to generate graph.
+    Function to generate a graph.
 
-    :param ds_train:       list of (n_clusters*n_ds) local train datasets of sample size n_samples (see function `get_data()`)
-    :param ds_val:         list of (n_clusters*n_ds) local validation datasets of sample size 100
-    :param models:         list of (n_clusters*n_ds) local models
-    :param cluster_labels: list of (n_clusters*n_ds) cluster assignments for each local dataset 
+    :param ds_train       : list of (n_clusters*n_ds) local train ds of sample size n_samples (see function `get_data()`)
+    :param ds_val         : list of (n_clusters*n_ds) local validation ds of sample size 100
+    :param models         : list of (n_clusters*n_ds) local models
+    :param cluster_labels : list of (n_clusters*n_ds) cluster assignments for each local dataset 
 
-    :out G:                list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
+    :out G                : list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val ds, model and cluster assignment
 
     """
     G = []
@@ -75,12 +75,12 @@ def build_edges(G, cluster_labels, p_in = 0.8, p_out = 0.2):
     Probability p_in for nodes within a cluster and probability p_out for nodes from different clusters.
     Edge weights are the same for all edges A_ij = 1; for A_ii = 0
 
-    :param G:              list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
-    :param cluster_labels: list of (n_clusters*n_ds) cluster assignments for each local dataset 
-    :param p_in:           probability of a link between nodes belonging to the same cluster 
-    :param p_out:          probability of a link between nodes belonging to different clusters 
+    :param G              : list of (n_clusters*n_ds) python dics (graph nodes) where each dict (node)  contain local train/ val datasets, model and cluster assignment
+    :param cluster_labels : list of (n_clusters*n_ds) cluster assignments for each local dataset 
+    :param p_in           : prob of a link between nodes belonging to the same cluster 
+    :param p_out          : prob of a link between nodes belonging to different clusters 
 
-    :out A:                numpy array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out.
+    :out A                : numpy array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out
 
     """
     
@@ -156,12 +156,14 @@ def build_graph_pooled(ds_train, ds_val, models, n_clusters=3):
     """
 
     Graph with n_clusters nodes. 
-    For each node (corresponding to one cluster), local training dataset is pooled train ds of all nodes belonging to that cluster. 
+    For each node (corresponding to one cluster), local training dataset are pooled train ds of all nodes belonging to that cluster.
+    "Oracle" or pooled model in this context is a model trained on a pooled training ds for each cluster.
     
-    :param ds_train:
-    :param ds_val:
-    :param model:
+    :param ds_train : list of (n_clusters*n_ds) local train ds of sample size n_samples (see function `get_data()`)
+    :param ds_val   : list of (n_clusters*n_ds) local validation ds of sample size 100
+    :param models   : list of (n_clusters) "oracle" models
     
+    :out G          : list of (n_clusters) python dicts (graph nodes) where each dict (node) contain local train/ val ds and an "oracle" model 
 
     """
     

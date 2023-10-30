@@ -60,17 +60,14 @@ def get_shared_data(k, m_shared, n_features, var=1):
 
     Create noisy Gaussian regression dataset.
 
-    :param m_shared   : int, =m', number of samples in a shared dataset(s)
-    :param n_features : int, number of features of a datapoint
-    :param k          : int, number of different X's sampled from normal distr
+    :param m_shared   : int : n.o. samples in a shared dataset(s)
+    :param n_features : int : n.o. features of a datapoint
+    :param k          : int : n.o. datasets (m_shared, n_features) to sample 
 
     :out shared_ds    : array of shape (k, m_shared, n_features), shared dataset(s)
 
     """
 
-    ds_shared = np.zeros((k, m_shared, n_features))
-    for i in range(k): 
-        X = np.random.normal(0, var, size=(m_shared, n_features))
-        ds_shared[i, :, :] = X
+    ds_shared = np.random.normal(0, var, size=(k, m_shared, n_features))
     
     return ds_shared

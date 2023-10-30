@@ -6,29 +6,39 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
     """
 
     Training loop.
+
+    There are different options for shared dataset generation with a param `ds_shared_mode`:
+    (1) 'const' : ds generated once, it is the same for all nodes and iterations.
+    (2) 'diff'  : ds generated for each node separately
+    (3) 'diff_on_iter' : ds generated for each node separately and on each iteration
+
+    Note, that plotting using `preds_list` make sense only for ds_shared_mode='const', 
+    where we can visually check if predictions on a `ds_shared` is similar among nodes belonging to the same cluster. 
     
-    :param G                : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes
-    :param pooled_G         : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster
-    :param iters            : number of iterations or updates of the local model
-    :param regularizer_term : scaling factor for GTV term
-    :param m_shared         : int, size of shared dataset(s)
-    :ds_shared_mode         : str,
+    Args:
+    : G                : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes
+    : pooled_G         : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster
+    : iters            : number of iterations or updates of the local model
+    : regularizer_term : scaling factor for GTV term
+    : m_shared         : int, size of shared dataset(s)
+    : ds_shared_mode   : str, controls how to generate ds_shared
     
-    :out preds_list         : list of arrays (m_shared, n_nodes), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
-    :out mse_train          : array (n_nodes,), local training MSE error for each node
-    :out mse_val            : array (n_nodes,), local validation MSE error for each node
-    :out mse_val_pooled     : array (n_nodes,), local validation MSE error for each node incurred by corresponding "pooled" model
+    Output:
+    : preds_list         : list of arrays (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    : mse_train          : array (n_nodes,), local training MSE error for each node
+    : mse_val            : array (n_nodes,), local validation MSE error for each node
+    : mse_val_pooled     : array (n_nodes,), local validation MSE error for each node incurred by corresponding "pooled" model
 
     """
-    n_nodes = len(G)                                # number of nodes in the graph
-    n_features = G[0]["ds_train"][0].shape[1]
+    n_nodes = len(G)                                # n.o. nodes in the graph
+    n_features = G[0]["ds_train"][0].shape[1]       # n.o. features of local datasets
 
     # Create shared dataset(s):
     if ds_shared_mode == 'const' : ds_shared = get_shared_data(1, m_shared, n_features)
     if ds_shared_mode == 'diff' : ds_shared = get_shared_data(n_nodes, m_shared, n_features)
 
     nodes_preds = np.zeros((n_nodes, m_shared))     # init predictions on a shared ds
-    preds_list = []                                 # save predictions on a test set for iter 1, n_iters/2, n_iters for plotting
+    preds_list = []                                 # save predictions on a shared ds for iter 1, n_iters/2, n_iters for plotting
     
     for i in range(n_iters):
         # sample new shared datasets on each iter
@@ -40,7 +50,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
             model     = G[n]["model"]
             _ = model.update(ds_train, ds_shared, nodes_preds, A[n], regularizer_term) 
 
-        # Update predictions on a shared test set 
+        # Update predictions on a shared set(s)
         nodes_preds = np.zeros((n_nodes, m_shared)) 
         for n in range(n_nodes):
             ds_train  = G[n]["ds_train"]
@@ -83,7 +93,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
         pred_train  = model.predict(ds_train[0])
         pred_val    = model.predict(ds_val[0])
         pred_pooled = model_pooled.predict(ds_val[0])
-
+        # shape of ds_train/val[1] is (m, 1) 
         mse_train[n]      = np.mean((ds_train[1] - pred_train.reshape(-1,1))**2)
         mse_val[n]        = np.mean((ds_val[1] - pred_val.reshape(-1,1))**2)
         mse_val_pooled[n] = np.mean((ds_val[1] - pred_pooled.reshape(-1,1))**2)

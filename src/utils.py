@@ -70,10 +70,12 @@ def plot_weight_dist(G, true_weights):
 
     Note - set bias=False for linear model
 
-    :param G            : list of (n_clusters*n_ds) python dictionaries (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
-    :param true_weights : array of shape (n_clusters, n_features), true weight vector for each cluster
+    Args:
+    : G            : list of (n_clusters*n_ds) python dicts (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
+    : true_weights : array of shape (n_clusters, n_features), true weight vector for each cluster
 
-    :out dist           : array of shape (n_nodes, n_clusters)
+    Output:
+    : dist         : array of shape (n_nodes, n_clusters)
 
     """
 
@@ -82,6 +84,7 @@ def plot_weight_dist(G, true_weights):
 
     for i in range(n_nodes):
         model_params = G[i]['model'].get_params()
+        print("model_params.shape, true_weights.shape", model_params.shape, true_weights.shape)
         dist[i] = np.sum((model_params - true_weights)**2, axis=1)
 
     plt.title("Sq. L2 dist. b/ learnt weight vector of a node and true vectors of 3 clusters")
@@ -95,13 +98,16 @@ def compute_mse(preds, n_clusters):
 
     """
 
-    Compute (i) MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j) and (ii) average these MSE's by clusters
+    Compute (i) MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j)
+    and (ii) average these MSE's by clusters
+    
+    Args:
+    : preds      : array of shape (n_nodes, m_shared), predictions of local models on the shared dataset
+    : n_clusters : int, number of true clusters
 
-    :param preds      : array of shape (n_nodes, m_shared), predictions of local models on the shared dataset
-    :param n_clusters : int, number of true clusters
-
-    :out mse_node     : array of shape (n_nodes, n_nodes), MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j)
-    :out mse_aver     : array of shape (n_clusters, n_clusters), average MSE's (by clusters)
+    Output:
+    : mse_node   : array of shape (n_nodes, n_nodes), MSE of predictions on a shared ds between all nodes, MSE(node_i, node_j)
+    : mse_aver   : array of shape (n_clusters, n_clusters), average MSE's (by clusters)
 
     """
 
@@ -125,14 +131,15 @@ def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
 
     """
 
-    Plot how similar (MSE) predictions of the nodes on shared ds. 
-    First supblot is adjacency matrix, next matrices are MSE values on 1st, middle and last iterations. The last matrix is average of MSE's by clusters.
+    Plot how similar (MSE) predictions of the nodes on shared ds (assuming that ds_shared is the same for all nodes). 
+    First supblot is adjacency matrix, next matrices are MSE values on 1st, mid and last iterations. The last matrix is average of MSE's by clusters.
     Datasets in diagonal blocks are from the same cluster (thus MSE expected to be smaller).
 
-    :param A          : np array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out.
-    :param preds_list : list of arrays (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
-    :param n_clusters : int, number of true clusters
-    :param n_iters    : int, number of iterations
+    Args:
+    : A          : array of shape (n_nodes, n_nodes), adjacency matrix of the graph, created with Bernoulli distribution and probabilities p_in and p_out.
+    : preds_list : list of arrays (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters
+    : n_clusters : int, number of true clusters
+    : n_iters    : int, number of iterations
 
     """
     
