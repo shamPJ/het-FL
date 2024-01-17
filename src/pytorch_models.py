@@ -29,29 +29,34 @@ class Optimize(torch.nn.Module):
         nn - number of nodes
         m' - sample size of shared test data
         
-        :param ds_train         : list of (n_clusters*n_ds) - local train datasets of sample size n_samples
-        :param ds_shared        : array of shape (k, m', n_features) -  shared test dataset(s); 
-                                  k=1 when all nodes share preds on the same dataset or k = n_nodes (=n_clusters*n_ds)
-        :param nodes_preds      : array of size (nn, m') - predictions for ds_shared of all nodes, 
-        :param A                : array of size (nn,) - row of a symmetric matrix A (weights of edges); A_ii=0 (zero diagonal)
-        :param regularizer_term : float number - lambda, reg.param.
+        Args:
+        : ds_train         : list of (n_clusters*n_ds) local train ds of sample size n_samples
+        : ds_shared        : array of shape (k, m_shared, n_features),  shared test dataset(s); 
+                            k = 1 when all nodes have the same ds_shared or
+                            k = n_nodes (=n_clusters*n_ds)
+        : nodes_preds      : array of size (nn, m_shared), predictions for ds_shared of all nodes
+        : A                : array of size (nn,), row of a symmetric adjacency matrix A; A_ii=0 (zero diagonal)
+        : regularizer_term : float number, lambda, reg.param
+
+        Output:
+        : loss             : loss value
         
         """
         
-        X, y = ds_train[0], ds_train[1]
-        k, m_shared = ds_shared.shape[0], ds_shared.shape[1]
+        X, y = ds_train[0], ds_train[1]    # local ds, feature matrix X and label vector y of the node
+        k, m_shared = ds_shared.shape[0], ds_shared.shape[1]    # n.o. shared ds and sample size
 
         # Convert numpy arrays to torch tensors
-        X, y = torch.FloatTensor(X), torch.FloatTensor(y)
-        ds_shared = torch.FloatTensor(ds_shared)
+        X, y = torch.Tensor(X), torch.Tensor(y)
+        params = [layer.data for layer in self.model.parameters()][0]
+        ds_shared = torch.Tensor(ds_shared)
         
-        A = torch.from_numpy(A).float().reshape(-1,1)   # reshape to (nn,1)
-        nodes_preds = torch.from_numpy(nodes_preds).float() # shape (nn, m')
+        A = torch.Tensor(A).reshape(-1,1)   # reshape to (nn, 1)
+        nodes_preds = torch.Tensor(nodes_preds)   # shape (nn, m_shared)
 
-        # Get predictions for local and shared test ds
+        # Get predictions for local and shared ds
         pred = self.model(X)
-        pred_shared = self.model(ds_shared.reshape(k*m_shared,-1))  # out shape (k*m',1)
-        print("out shape", pred_shared.shape)
+        pred_shared = self.model(ds_shared.reshape(k*m_shared,-1))  # out shape (k*m_shared,1)
         pred_shared = pred_shared.reshape(k, m_shared)
         
         # Set all gradient values to zeros
@@ -59,7 +64,8 @@ class Optimize(torch.nn.Module):
         
         # Compute loss
         loss_local = self.criterion(y, pred)
-        loss_per_node  = torch.mean((pred_shared - nodes_preds)**2, axis=1) # out shape (k,)
+        loss_per_node  = torch.mean((pred_shared - nodes_preds)**2, axis=1) # out shape (nn,)
+        # loss_per_node shape is ([nn])
         loss_GTV = torch.mean(loss_per_node.reshape(-1,1)*A)
         loss = loss_local + (regularizer_term/2)*loss_GTV
 
@@ -75,14 +81,14 @@ class Optimize(torch.nn.Module):
         
         """
 
-        Simple Gradient Step without penalty term (for pooled node).
+        Simple Gradient Step without penalty term (for pooled node and "oracle" model).
 
         """
         
         X, y = ds_train[0], ds_train[1]
-        X, y = torch.FloatTensor(X), torch.FloatTensor(y)
+        X, y = torch.Tensor(X), torch.Tensor(y)
 
-        # Get predictions for local and shared test ds
+        # Get predictions on local train ds
         pred = self.model(X)
         
         # Set all gradient values to zeros
@@ -114,7 +120,7 @@ class Linreg_Torch(Optimize):
         self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=lr)
         
     def get_params(self):
-        params = [layer.data for layer in self.model.parameters()][0].numpy()
+        params = [layer.data for layer in self.model.parameters()][0].detach().numpy() 
         return params
 
 class MLP_Torch(Optimize):

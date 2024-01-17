@@ -177,23 +177,27 @@ def mse_mean_std(mse_local_list):
 
     """
 
-    Average MSE values (across all repetitions and nodes). STD is computed across `repeat_times`.
+    Average MSE values (across all repetitions and nodes for each iteration). STD is computed across `repeat_times`.
     `k` is the number of hyperparams combinations. 
 
-    :param mse_local_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing training or validation loss for repeat_times runs for each node in the graph. 
+    Args:
+    : mse_local_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) 
+                       containing MSE for repeat_times runs for each node in the graph for each iteration. 
 
-    :out mse_local_mean   : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
-    :out mse_local_std    : list with k elements (floats). Corresponding standard deviation. 
+    Output:
+    : mse_local_mean : list with k elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : mse_local_std  : list with k elements. Each element is an array (n_iters). Corresponding standard deviation across all runs (). 
 
     """
 
     mse_local_mean, mse_local_std = [], []
 
     for mse_local in mse_local_list:
+        # mse_local shape is (repeat_times, n_nodes, n_iters)
         # compute average across all dims
-        mse_local_mean.append(np.mean(mse_local))
+        mse_local_mean.append(np.mean(mse_local, (0,1)))
         # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
-        std = np.std(np.mean(mse_local, axis=1))
+        std = np.std(np.mean(mse_local, axis=1), axis=0)
         mse_local_std.append(std)
 
     return mse_local_mean, mse_local_std
@@ -205,11 +209,13 @@ def mse_mean_std_scaled(mse_list, mse_pooled_list):
     Scaled average MSE values (across all repetitions and nodes). STD is computed across `repeat_times`.
     `k` is the number of hyperparams combinations. 
 
-    :param mse_list        : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing training loss for repeat_times runs for each node in the graph. 
-    :param mse_pooled_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes) containing validation loss for repeat_times runs for each cluster model on the corresponding local node's val ds. 
+    Args:
+    : mse_list        : list with k elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing training loss for repeat_times runs for each node in the graph. 
+    : mse_pooled_list : list with k elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing validation loss for repeat_times runs for each "oracle" model on the corresponding local node's val ds. 
 
-    :out mse_mean          : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
-    :out mse_std           : list with k elements (floats). Corresponding standard deviation. 
+    Output:
+    : mse_mean        : list with k elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : mse_std         : list with k elements. Each element is an array (n_iters). Corresponding standard deviation. 
 
     """
     
@@ -219,11 +225,10 @@ def mse_mean_std_scaled(mse_list, mse_pooled_list):
         
         # scale local MSE vals
         mse_scaled = mse / mse_pooled
-        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
-        std = np.std(np.mean(mse_scaled, axis=1))
-
         # compute average across all dims
-        mse_mean.append(np.mean(mse_scaled))
+        mse_mean.append(np.mean(mse_scaled, axis=(0,1)))
+        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
+        std = np.std(np.mean(mse_scaled, axis=1), axis=0)
         mse_std.append(std)
 
     return mse_mean, mse_std
@@ -232,13 +237,18 @@ def plot_mse(ax, mse_mean, mse_std, reg_term_list, n_samples_list):
 
     """
     
-    :param ax             : matplotlib.axes object
-    :param mse_mean       : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
-    :param mse_std        : list with k elements (floats). Corresponding standard deviation. 
-    :params reg_term_list : list with k elements (floats). Penalty term values used in `iter_params` func.
-    :param n_samples_list : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
+    Function to plot a subplot with average MSE's and error bars.
+    `k` is the number of hyperparams combinations. 
 
-    :out ax               : matplotlib.axes object with plots
+    Args:
+    : ax             : matplotlib.axes object
+    : mse_mean       : list with k elements (floats). Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : mse_std        : list with k elements (floats). Corresponding standard deviation. 
+    : reg_term_list  : list with k elements (floats). Penalty term values used in `iter_params` func.
+    : n_samples_list : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
+
+    Output:
+    : ax             : matplotlib.axes object with plots
 
     """
     
@@ -246,7 +256,6 @@ def plot_mse(ax, mse_mean, mse_std, reg_term_list, n_samples_list):
     n_sizes = len(n_samples_list)
     
     for i in range(n_regs):
-
         y = mse_mean[i*n_sizes:i*n_sizes+n_sizes]
         y_err = mse_std[i*n_sizes:i*n_sizes+n_sizes]
         ax.errorbar(n_samples_list, y, yerr=y_err, label='Reg. term ' + str(reg_term_list[i]), lolims=True, linestyle='--')
@@ -254,19 +263,20 @@ def plot_mse(ax, mse_mean, mse_std, reg_term_list, n_samples_list):
     ax.set_xticks(n_samples_list)
     return ax
 
-def save_and_plot(exp_results, model_hyperparams, reg_term_list, n_samples_list, name):
+def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
 
     """
 
     Save computed average MSE's and STD's for experiment with different model hyperparams, regularization and local dataset size.
+    `k` is the number of hyperparams (reg_term * n_samples) combinations. 
     
-    :param             : 
-    :param        :  
-    :param        : 
-    :params reg_term_list : list with k elements (floats). Penalty term values used in `iter_params` func.
-    :param n_samples_list : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
-
-    :out ax               : matplotlib.axes object with plots
+    Args:
+    : exp_results       : list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
+                        mse_train/val is a list with k elements. Each element is an array (n_iters) - 
+                        an average across all runs of average across all nodes MSEs for each hyperparam combination {reg_term, n_samples}.
+    : model_hyperparams : list of model hyperparams, e.g. lrate, tree depth etc.
+    : reg_term_list     : list with k elements (floats). Penalty term values used in `iter_params` func.
+    : n_samples_list    : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
 
     """
 
@@ -279,6 +289,7 @@ def save_and_plot(exp_results, model_hyperparams, reg_term_list, n_samples_list,
 
     for i in range(len(model_hyperparams)):
         # get experiment results for ith value of model hyperparam
+        # plot_list is a list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
         plot_list = exp_results[i]
         axs = axes[i]
 
@@ -286,7 +297,7 @@ def save_and_plot(exp_results, model_hyperparams, reg_term_list, n_samples_list,
             mse = data[0]
             mse_std = data[1]
             plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
-            ax.set_title(title + ' lrate = ' + str(model_hyperparams[i]))
+            ax.set_title(title + " " + model_hyperparams_name + ' = ' + str(model_hyperparams[i]))
     
     [axs[0].set_ylabel ('Loss') for axs in axes]
 

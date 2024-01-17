@@ -5,20 +5,22 @@ def get_data(n_clusters, n_ds, n_samples, n_features, noise_scale=1.0):
     
     """
     
-    Function to create noisy Gaussian regression datasets. 
+    Function to create noisy Gaussian regression datasets multivar Gaussian ~N(0,I). 
     Datasets within the cluster share the same true weight vector. 
     For each node we create training (size = n_samples) and validation (size = 100) ds.
     
-    :param n_clusters:   number of clusters
-    :param n_ds:         number of local datasets per cluster 
-    :param n_samples:    number of samples in a local dataset
-    :param n_features:   number of features of a datapoint
-    :param noise_scale:  scale of normal distribution used to generate data noise
+    Args:
+    :n_clusters : number of clusters
+    :n_ds       : number of local datasets per cluster 
+    :n_samples  : number of samples in a local dataset
+    :n_features : number of features of a datapoint
+    :noise_scale: scale of normal distribution used to generate data noise
     
-    :out ds_train:       list of (n_clusters*n_ds) tuples, local train datasets  of sample size n_samples
-    :out ds_val:         list of (n_clusters*n_ds) tuples, local validation datasets of sample size 100
-    :out cluster_labels: list of (n_clusters*n_ds) cluster assignments for each local dataset 
-    :out true_weights:   array of shape (n_clusters, n_features), true weight vector for each cluster
+    Out:
+    :ds_train:       list of (n_clusters*n_ds) tuples, local train datasets  of sample size n_samples
+    :ds_val:         list of (n_clusters*n_ds) tuples, local validation datasets of sample size 100
+    :cluster_labels: list of (n_clusters*n_ds) cluster assignments for each local dataset 
+    :true_weights:   array of shape (n_clusters, n_features), true weight vector for each cluster
 
     """
     
