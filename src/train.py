@@ -16,21 +16,24 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
     where we can visually check if predictions on a `ds_shared` is similar among nodes belonging to the same cluster. 
     
     Args:
-    : G                : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes
-    : pooled_G         : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster
-    : iters            : int, number of iterations or updates of the local model
-    : regularizer_term : float, scaling factor for GTV term
-    : m_shared         : int, size of shared dataset(s)
-    : ds_shared_mode   : str, controls how to generate ds_shared
+    : G                  : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes
+    : pooled_G           : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster
+    : iters              : int, number of iterations or updates of the local model
+    : regularizer_term   : float, scaling factor for GTV term
+    : m_shared           : int, size of shared dataset(s)
+    : ds_shared_mode     : str, controls how to generate ds_shared
     
     Output:
-    : preds_list     : list len=3, el is array (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters (for plotting)
-    : mse_train      : array (n_nodes, n_iters), local training MSE for each node for all iterations
-    : mse_val        : array (n_nodes, n_iters), local validation MSE for each node for all iterations
-    : mse_val_pooled : array (n_nodes, n_iters), local validation MSE for each node incurred by corresponding "pooled" model for all iterations
+    : preds_list         : list len=3, el is array (n_nodes, m_shared), predictions on the shared dataset on iteration 1, n_iters/2, n_iters (for plotting)
+    : mse_train          : array (n_nodes, n_iters), local training MSE for each node for all iterations
+    : mse_val            : array (n_nodes, n_iters), local validation MSE for each node for all iterations
+    : mse_val_pooled     : array (n_nodes, n_iters), local validation MSE for each node incurred by corresponding "pooled" model for all iterations
+    : est_weights        : array (n_iters, n_nodes, n_features), weights computed with GD updates (valid only for parametric models)
+    : est_weights_pooled : array (n_iters, n_clusters, n_features), weights computed with GD updates for pooled model
 
     """
     n_nodes = len(G)                                # n.o. nodes in the graph
+    n_clusters = len(G_pooled)                      # n.o. clusters
     n_features = G[0]["ds_train"][0].shape[1]       # n.o. features of local datasets
 
     # Create shared dataset(s):
@@ -41,6 +44,9 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
     mse_train      = np.zeros((n_nodes, n_iters))
     mse_val        = np.zeros((n_nodes, n_iters))
     mse_val_pooled = np.zeros((n_nodes, n_iters))
+    # estimated weights
+    est_weights    = np.zeros((n_nodes, n_iters))
+    est_weights_pooled = np.zeros((n_clusters, n_iters))
 
     nodes_preds = np.zeros((n_nodes, m_shared))     # init predictions on a shared ds
     preds_list = []                                 # save predictions on a shared ds for iter 1, n_iters/2, n_iters for plotting
@@ -54,6 +60,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
             ds_train  = G[n]["ds_train"]
             model     = G[n]["model"]
             _ = model.update(ds_train, ds_shared, nodes_preds, A[n], regularizer_term) 
+            est_weights[i, n] = model.get_params().reshape(-1,)
 
         # Update predictions on a shared set(s)
         # and save validation MSE on the current iteration
@@ -89,6 +96,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
             ds_train = node["ds_train"]
             model    = node['model']
             _        = model.update_pooled(ds_train) 
+            est_weights_pooled[i, node]  = model.get_params().reshape(-1,)
         
         # Compute MSE on validation data using pooled model 
         for n in range(n_nodes):
@@ -103,4 +111,4 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, ds_
             # shape of ds_train/val[1] is (m, 1) 
             mse_val_pooled[n,i] = np.mean((ds_val[1] - pred_pooled.reshape(-1,1))**2)
         
-    return preds_list, mse_train, mse_val, mse_val_pooled
+    return preds_list, mse_train, mse_val, mse_val_pooled, est_weights, est_weights_pooled

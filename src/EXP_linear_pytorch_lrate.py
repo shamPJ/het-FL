@@ -54,18 +54,19 @@ for lrate in lrates:
     # out is list len=k ({reg.term, n_samples} combinations), each el array of shape (repeat_times, n_nodes, n_iters)
     mse_train, mse_val, mse_val_pooled = iter_params(config)
     # out is list len=k, each el array of shape (n_iters)
-    mse_t, mse_std_t = mse_mean_std(mse_train)
-    mse_v, mse_std_v = mse_mean_std(mse_val)
+    # mse_t, mse_std_t = mse_mean_std(mse_train)
+    # mse_v, mse_std_v = mse_mean_std(mse_val)
     
-    mse_t_scaled, mse_std_t_scaled = mse_mean_std_scaled(mse_train, mse_val_pooled)
-    mse_v_scaled, mse_std_v_scaled = mse_mean_std_scaled(mse_val, mse_val_pooled)
+    # mse_t_scaled, mse_std_t_scaled = mse_mean_std_scaled(mse_train, mse_val_pooled)
+    # mse_v_scaled, mse_std_v_scaled = mse_mean_std_scaled(mse_val, mse_val_pooled)
 
-    # for each learning rate create a list of tuples with train/val average MSE and std
-    mse_lrates.append( [(mse_t, mse_std_t), (mse_v, mse_std_v)] )
-    mse_lrates_scaled.append( [(mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled)] )
+    # # for each learning rate create a list of tuples with train/val average MSE and std
+    # mse_lrates.append( [(mse_t, mse_std_t), (mse_v, mse_std_v)] )
+    # mse_lrates_scaled.append( [(mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled)] )
 
 # Save and plot computed averages and std
 timestamp = time.strftime("%Y%m%d-%H%M%S")
+
 # save_and_plot(mse_lrates, lrates, 'lrate', reg_term_list, n_samples_list, name='Linreg_Torch_lrate_'+timestamp)
 # save_and_plot(mse_lrates_scaled, lrates, 'lrate', reg_term_list, n_samples_list, name='Linreg_Torch_lrate_scaled_'+timestamp)
 
