@@ -10,7 +10,7 @@ import os
 import time
 from tqdm import tqdm
 from train import train
-from utils import mse_mean_std, mse_mean_std_scaled, param_est_error, param_est_error_scaled
+from utils import mse_mean_std, mse_mean_std_scaled, param_est_error, param_est_error_pooled
 
 def iter_params(config, compute_dist=False):
     
@@ -82,7 +82,7 @@ def iter_params(config, compute_dist=False):
             mse_val_pooled_array = np.zeros((repeat_times, n_nodes, n_iters))
             # Estimated error for parameter vector 
             est_error_array        = np.zeros((repeat_times, n_nodes, n_iters))
-            est_error_pooled_array = np.zeros((repeat_times, n_clusters, n_iters))
+            est_error_pooled_array = np.zeros((repeat_times, n_nodes, n_iters))
             
             # Repeat train() with hyperparams {reg_term, n_samples} 
             for i in range(repeat_times):
@@ -107,7 +107,7 @@ def iter_params(config, compute_dist=False):
 
                 # Save parameter vector estimation error
                 est_error_array[i]        = param_est_error(true_weights, est_weights, cluster_labels)
-                est_error_pooled_array[i] = param_est_error_scaled(true_weights, est_weights, est_weights_pooled,cluster_labels)
+                est_error_pooled_array[i] = param_est_error_pooled(true_weights, est_weights_pooled, cluster_labels)
             
             data_to_save = {
                             'repeat_times':     repeat_times,
@@ -155,6 +155,10 @@ def iter_params(config, compute_dist=False):
         mse_t_scaled, mse_std_t_scaled = mse_mean_std_scaled(mse_train_list, mse_val_pooled_list)
         mse_v_scaled, mse_std_v_scaled = mse_mean_std_scaled(mse_val_list, mse_val_pooled_list)
 
+        # weight vector est. error mean and std over repeatitions 
+        est_error_means, est_error_std = mse_mean_std(est_error_list)
+        est_error_means_scaled, est_error_std_scaled = mse_mean_std_scaled(est_error_list, est_error_pooled_list)
+
         os.mkdir(subdir + '/stats')
         with open(subdir + '/stats/params' + '_' + timestamp + '.json', 'w') as f:
                 json.dump({'reg_term' : reg_term,
@@ -167,6 +171,8 @@ def iter_params(config, compute_dist=False):
         # save computed mse and std for each pair (reg.term, sample size)
         np.save(subdir + '/stats/mse_std' + '_' + timestamp + '.npy', [(mse_t, mse_std_t), (mse_v, mse_std_v)])
         np.save(subdir + '/stats/mse_std_scaled' + '_' + timestamp + '.npy', [(mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled)])
+        np.save(subdir + '/stats/est_error_mean_std' + '_' + timestamp + '.npy', (est_error_means, est_error_std))
+        np.save(subdir + '/stats/est_error_mean_std_scaled' + '_' + timestamp + '.npy', (est_error_means_scaled, est_error_std_scaled))
 
     return path, mse_train_list, mse_val_list, mse_val_pooled_list
 

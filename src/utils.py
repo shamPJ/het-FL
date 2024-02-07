@@ -172,14 +172,13 @@ def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
     fig.tight_layout()
     plt.show()
 
-
 #==================================== PLOTTING HYPERPARAMS ======================================#
 
 def mse_mean_std(mse_local_list):
 
     """
 
-    Average MSE values (across all repetitions and nodes for each iteration) for each sample size. STD is computed across `repeat_times`.
+    Average MSE (or other loss) values (across all repetitions and nodes for each iteration) for each sample size. STD is computed across `repeat_times`.
 
     Args:
     : mse_local_list : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) 
@@ -207,7 +206,7 @@ def mse_mean_std_scaled(mse_list, mse_pooled_list):
     
     """
 
-    Scaled average MSE values (across all repetitions and nodes) for each sample size. STD is computed across `repeat_times`. 
+    Scaled average MSE (or other loss) values (across all repetitions and nodes) for each sample size. STD is computed across `repeat_times`. 
 
     Args:
     : mse_list        : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing training loss for repeat_times runs for each node in the graph. 
@@ -233,7 +232,7 @@ def mse_mean_std_scaled(mse_list, mse_pooled_list):
 
     return mse_mean, mse_std
 
-def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
+def plot_mse(ax, mse_mean, mse_std, nm_d_ratio, reg_term, title=False):
 
     """
     
@@ -241,24 +240,24 @@ def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
     Each line correspond to the value d/m is the number of hyperparams combinations. 
 
     Args:
-    : ax        : matplotlib.axes object
-    : mse_mean  : list. Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
-    : mse_std   : list. Corresponding standard deviation. 
-    : d_m_ratio : list of corresponding d_m_ratio's.
-    : reg_term  : lambda value, reg.term.
+    : ax         : matplotlib.axes object
+    : mse_mean   : list. Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : mse_std    : list. Corresponding standard deviation. 
+    : nm_d_ratio : list of corresponding nm_d_ratio's.
+    : reg_term   : lambda value, reg.term.
 
     Output:
-    : ax        : matplotlib.axes object with plots
+    : ax         : matplotlib.axes object with plots
 
     """
     
     n_lines, iters = mse_mean.shape[0], mse_mean.shape[1]
-    assert n_lines == len(d_m_ratio)
+    assert n_lines == len(nm_d_ratio)
     
     for i in range(n_lines):
         y = mse_mean[i]
         y_err = mse_std[i]
-        ax.plot(range(1, iters+1), y, label='d/m ratio ' + str(d_m_ratio[i]))
+        ax.plot(range(1, iters+1), y, label='nm/d ratio ' + str(nm_d_ratio[i]))
         ax.fill_between(range(1, iters+1), y - y_err, y + y_err, alpha=0.2)
         
     ax.spines[['right', 'top']].set_visible(False)
@@ -266,9 +265,14 @@ def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
     ax.set_xticks(range(0, iters+1, int(iters / 5)))
     return ax
 
-def load_and_plot(exp_dir):
+def load_and_plot_mse(exp_dir, scaled=False):
 
     """
+    Args:
+    : exp_dir : str, path to saved .npy files in /stats dir. npy file is in format [(mse_t, mse_std_t), (mse_v, mse_std_v)]
+
+    Out:
+
     """
 
     subdirs = glob(os.getcwd() + '/out/' + exp_dir + '/*/')
@@ -284,103 +288,177 @@ def load_and_plot(exp_dir):
             param_dict = json.load(file)
 
         # get experiment settings    
-        d_m_ratio = param_dict['d_m_ratio']
+        nm_d_ratio = param_dict['nm_d_ratio']
         reg_term = param_dict['reg_term']
         # load MSE values
         npy_files = glob(f + 'stats/*.npy')
+        
         for npy_f in npy_files:
-            if 'scaled' in (npy_f.split('/')[-1].split('_')):
-                (mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled) = np.load(npy_f)
+            if scaled:
+                if 'mse_std_scaled' in (npy_f.split('/')[-1]):
+                    (mse_t, mse_std_t), (mse_v, mse_std_v)= np.load(npy_f)
             else:
-                (mse_t, mse_std_t), (mse_v, mse_std_v)= np.load(npy_f)
+                if ('mse_std' in (npy_f.split('/')[-1])) and ('scaled' not in (npy_f.split('/')[-1])):
+                    (mse_t, mse_std_t), (mse_v, mse_std_v)= np.load(npy_f)
 
         # plot subplot
-        axes[0, i] = plot_mse(axes[0, i], mse_t, mse_std_t, d_m_ratio, reg_term, title=True)
-        axes[1, i] = plot_mse(axes[1, i], mse_v, mse_std_v, d_m_ratio, reg_term)
-    
+        axes[0, i] = plot_mse(axes[0, i], mse_t, mse_std_t, nm_d_ratio, reg_term, title=True)
+        axes[1, i] = plot_mse(axes[1, i], mse_v, mse_std_v, nm_d_ratio, reg_term)
+
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Training loss') 
     axes[1, 0].set_ylabel ('Validation loss') 
     [axs.set_xlabel ('Iter') for axs in axes[1]]
+
+    if scaled:
+        file_name = '_scaled.png'
+    else:
+        file_name = '.png'
     
     fig.tight_layout()
-    plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + '.png')
+    plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + file_name)
 
-    
-def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
+def param_est_error(true_weights, est_weights, cluster_labels):
 
     """
-
-    Save computed average MSE's and STD's for experiment with different model hyperparams, regularization and local dataset size.
-    `k` is the number of hyperparams (reg_term * n_samples) combinations. 
-    
     Args:
-    : exp_results       : list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
-                        mse_train/val is a list with k elements. Each element is an array (n_iters) - 
-                        an average across all runs of average across all nodes MSEs for each hyperparam combination {reg_term, n_samples}.
-    : model_hyperparams : list of model hyperparams, e.g. lrate, tree depth etc.
-    : reg_term_list     : list with k elements (floats). Penalty term values used in `iter_params` func.
-    : n_samples_list    : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
+    : true_weights   : array of shape (n_clusters, n_features), true weight vector for each cluster
+    : est_weights    : array (n_iters, n_nodes, n_features), weights computed with GD updates (valid only for parametric models)
+    : cluster_labels : list of (n_clusters*n_ds) cluster assignments for each local dataset 
+    
+    Out:
+    : est_error      : array (n_nodes, n_iters)
+    """
+
+    n_nodes, n_features = len(cluster_labels), true_weights.shape[1]
+    true_w = np.zeros((n_nodes, n_features))
+
+    for i in range(n_nodes):
+        true_w[i] = true_weights[cluster_labels[i]]
+    
+    true_w = true_w.reshape(1, n_nodes, n_features)
+    # est error ||w-w_hat||^2
+    est_error = np.sum((true_w - est_weights)**2, axis=-1)
+
+    return est_error.T
+
+def param_est_error_pooled(true_weights, est_weights_pooled, cluster_labels):
+
+    """
+    For each node compute est error for model parameters of corresponding pooled model.
+
+    Args:
+    : true_weights       : array of shape (n_clusters, n_features), true weight vector for each cluster
+    : est_weights_pooled : array (n_iters, n_clusters, n_features), weights computed with GD updates for pooled model
+    : cluster_labels     : list of (n_clusters*n_ds) cluster assignments for each local dataset 
+
+    Out:
+    : est_error_pooled   : array (n_nodes, n_iters)
 
     """
 
-    with open('out/img/' + name.replace(' ', '_') + '.json', 'w') as f:
-        json.dump(exp_results, f)
+    n_nodes, n_features, n_iters = len(cluster_labels), true_weights.shape[1], est_weights_pooled.shape[0]
+    true_w = np.zeros((1, n_nodes, n_features))
+    est_w_pooled = np.zeros((n_iters, n_nodes, n_features))
 
-    titles = ['Train ds', 'Validation ds']
-
-    fig, axes = plt.subplots(len(model_hyperparams), 2, sharey=True, sharex=True, figsize=(8,8))
-
-    for i in range(len(model_hyperparams)):
-        # get experiment results for ith value of model hyperparam
-        # plot_list is a list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
-        plot_list = exp_results[i]
-        axs = axes[i]
-
-        for ax, data, title in zip(axs, plot_list, titles):
-            mse = data[0]
-            mse_std = data[1]
-            plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
-            ax.set_title(title + " " + model_hyperparams_name + ' = ' + str(model_hyperparams[i]))
+    for i in range(n_nodes):
+        true_w[:, i] = true_weights[cluster_labels[i]]
+        # select weight vector of corresponding pooled model, out shape (n_iters, n_nodes, n_features)
+        est_w_pooled[:, i] = est_weights_pooled[:, cluster_labels[i]]
     
-    [axs[0].set_ylabel ('Loss') for axs in axes]
+    # est error ||w-w_hat||^2
+    est_error_pooled = np.sum((true_w - est_w_pooled)**2, axis=-1)
 
-    axes[-1,0].set_xlabel ('Training ds size')
-    axes[-1,1].set_xlabel ('Training ds size')
+    return est_error_pooled.T
 
-    plt.legend()
-    fig.tight_layout()
-    plt.savefig("out/img/" + name.replace(' ', '_') + ".png")
-    plt.show()
+def load_and_plot_est_error(exp_dir):
 
-    def param_est_error(true_weights, est_weights, cluster_labels):
+    """
+    Args:
+    : exp_dir : str, path to saved .npy files in /stats dir. npy file is in format [mse_t, mse_std_t]
 
-        """
-        Args:
-        : true_weights   : 
-        : est_weights    : array (n_iters, n_nodes, n_features), weights computed with GD updates (valid only for parametric models)
-        : cluster_labels : list of (n_clusters*n_ds) cluster assignments for each local dataset 
+    Out:
+
+    """
+
+    subdirs = glob(os.getcwd() + '/out/' + exp_dir + '/*/')
+    # indexes for ordered subdirs by increasing lambda
+    indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
+    # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
+    fig, axes = plt.subplots(2, len(subdirs), sharex=True, sharey='row', figsize=(8,8))
+
+    for i, ind in enumerate(indx):
+        f = subdirs[ind]
+        params = glob(f + 'stats/*.json')
+        with open(params[0]) as file:
+            param_dict = json.load(file)
+
+        # get experiment settings    
+        nm_d_ratio = param_dict['nm_d_ratio']
+        reg_term = param_dict['reg_term']
+        # load MSE values
+        npy_files = glob(f + 'stats/*.npy')
+        for npy_f in npy_files:
+            if 'est_error' in npy_f.split('/')[-1]:
+                if 'scaled' in npy_f.split('/')[-1]:
+                    est_error_means_scaled, est_error_std_scaled = np.load(npy_f)
+                else:
+                    est_error_means, est_error_std = np.load(npy_f)
+
+        # plot subplot
+        axes[0, i] = plot_mse(axes[0, i], est_error_means, est_error_std, nm_d_ratio, reg_term, title=True)
+        axes[1, i] = plot_mse(axes[1, i], est_error_means_scaled,  est_error_std_scaled, nm_d_ratio, reg_term)
+
+        axes[1, -1].legend()
+        axes[0, 0].set_ylabel ('Weight vector est. error') 
+        axes[1, 0].set_ylabel ('Weight vector est. error, scaled') 
+        [axs.set_xlabel ('Iter') for axs in axes[1]]
         
-        Out:
-        : est_error : array (n_iters, n_nodes)
-        """
-
-        n_nodes, n_features = len(cluster_labels), true_weights.shape[1]
-        true_w = np.zeros((n_nodes, n_features))
-
-        for i in range(n_nodes):
-            true_w[i] = true_weights[cluster_labels[i]]
+        fig.tight_layout()
+        plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + '_est_error.png')
         
-        true_w = true_w.reshape(1, n_nodes, n_features)
-        est_error = np.sum((true_w - est_weights)**2, axis=-1)
-        print(est_error.shape)
+# def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
 
-        return 
+#     """
 
-    def param_est_error_scaled(true_weights, est_weights, est_weights_pooled):
-        """
-        : est_weights        : array (n_iters, n_nodes, n_features), weights computed with GD updates (valid only for parametric models)
-        : est_weights_pooled : array (n_iters, n_clusters, n_features), weights computed with GD updates for pooled model
+#     Save computed average MSE's and STD's for experiment with different model hyperparams, regularization and local dataset size.
+#     `k` is the number of hyperparams (reg_term * n_samples) combinations. 
+    
+#     Args:
+#     : exp_results       : list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
+#                         mse_train/val is a list with k elements. Each element is an array (n_iters) - 
+#                         an average across all runs of average across all nodes MSEs for each hyperparam combination {reg_term, n_samples}.
+#     : model_hyperparams : list of model hyperparams, e.g. lrate, tree depth etc.
+#     : reg_term_list     : list with k elements (floats). Penalty term values used in `iter_params` func.
+#     : n_samples_list    : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
 
-        """
-        pass
+#     """
+
+#     with open('out/img/' + name.replace(' ', '_') + '.json', 'w') as f:
+#         json.dump(exp_results, f)
+
+#     titles = ['Train ds', 'Validation ds']
+
+#     fig, axes = plt.subplots(len(model_hyperparams), 2, sharey=True, sharex=True, figsize=(8,8))
+
+#     for i in range(len(model_hyperparams)):
+#         # get experiment results for ith value of model hyperparam
+#         # plot_list is a list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
+#         plot_list = exp_results[i]
+#         axs = axes[i]
+
+#         for ax, data, title in zip(axs, plot_list, titles):
+#             mse = data[0]
+#             mse_std = data[1]
+#             plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
+#             ax.set_title(title + " " + model_hyperparams_name + ' = ' + str(model_hyperparams[i]))
+    
+#     [axs[0].set_ylabel ('Loss') for axs in axes]
+
+#     axes[-1,0].set_xlabel ('Training ds size')
+#     axes[-1,1].set_xlabel ('Training ds size')
+
+#     plt.legend()
+#     fig.tight_layout()
+#     plt.savefig("out/img/" + name.replace(' ', '_') + ".png")
+#     plt.show()
