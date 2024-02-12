@@ -31,9 +31,7 @@ class Optimize(torch.nn.Module):
         
         Args:
         : ds_train         : list of (n_clusters*n_ds) local train ds of sample size n_samples
-        : ds_shared        : array of shape (k, m_shared, n_features),  shared test dataset(s); 
-                            k = 1 when all nodes have the same ds_shared or
-                            k = n_nodes (=n_clusters*n_ds)
+        : ds_shared        : array of shape (m_shared, n_features),  shared test dataset; 
         : nodes_preds      : array of size (nn, m_shared), predictions for ds_shared of all nodes
         : A                : array of size (nn,), row of a symmetric adjacency matrix A; A_ii=0 (zero diagonal)
         : regularizer_term : float number, lambda, reg.param
@@ -44,11 +42,10 @@ class Optimize(torch.nn.Module):
         """
         
         X, y = ds_train[0], ds_train[1]    # local ds, feature matrix X and label vector y of the node
-        k, m_shared = ds_shared.shape[0], ds_shared.shape[1]    # n.o. shared ds and sample size
+        m_shared = ds_shared.shape[0]      # n.o. data pts in shared ds
 
         # Convert numpy arrays to torch tensors
         X, y = torch.Tensor(X), torch.Tensor(y)
-        params = [layer.data for layer in self.model.parameters()][0]
         ds_shared = torch.Tensor(ds_shared)
         
         A = torch.Tensor(A).reshape(-1,1)   # reshape to (nn, 1)
@@ -56,8 +53,8 @@ class Optimize(torch.nn.Module):
 
         # Get predictions for local and shared ds
         pred = self.model(X)
-        pred_shared = self.model(ds_shared.reshape(k*m_shared,-1))  # out shape (k*m_shared,1)
-        pred_shared = pred_shared.reshape(k, m_shared)
+        pred_shared = self.model(ds_shared)  # out shape (m_shared,1)
+        pred_shared = pred_shared.reshape(1, m_shared)
         
         # Set all gradient values to zeros
         self.model.zero_grad()  
@@ -117,7 +114,7 @@ class Linreg_Torch(Optimize):
             
         # Define Loss and Optimizer
         self.criterion = torch.nn.MSELoss(reduction='mean')
-        self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=lr)
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr)
         
     def get_params(self):
         params = [layer.data for layer in self.model.parameters()][0].detach().numpy() 

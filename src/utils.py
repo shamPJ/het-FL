@@ -262,7 +262,7 @@ def plot_mse(ax, mse_mean, mse_std, nm_d_ratio, reg_term, title=False):
         
     ax.spines[['right', 'top']].set_visible(False)
     if title: ax.title.set_text('reg.term = ' + str(reg_term))
-    ax.set_xticks(range(0, iters+1, int(iters / 5)))
+    ax.set_xticks(range(0, iters+1, int(iters / 4)))
     return ax
 
 def load_and_plot_mse(exp_dir, scaled=False):
@@ -279,7 +279,7 @@ def load_and_plot_mse(exp_dir, scaled=False):
     # indexes for ordered subdirs by increasing lambda
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
-    fig, axes = plt.subplots(2, len(subdirs), sharey=True, sharex=True, figsize=(8,8))
+    fig, axes = plt.subplots(2, len(subdirs), sharey=True, figsize=(8,8))
 
     for i, ind in enumerate(indx):
         f = subdirs[ind]
@@ -308,6 +308,7 @@ def load_and_plot_mse(exp_dir, scaled=False):
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Training loss') 
     axes[1, 0].set_ylabel ('Validation loss') 
+    #axes[1, 0].set_ylim (0,30) 
     [axs.set_xlabel ('Iter') for axs in axes[1]]
 
     if scaled:
@@ -385,7 +386,7 @@ def load_and_plot_est_error(exp_dir):
     # indexes for ordered subdirs by increasing lambda
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
-    fig, axes = plt.subplots(2, len(subdirs), sharex=True, sharey='row', figsize=(8,8))
+    fig, axes = plt.subplots(2, len(subdirs), sharey='row', figsize=(8,8))
 
     for i, ind in enumerate(indx):
         f = subdirs[ind]
@@ -409,13 +410,13 @@ def load_and_plot_est_error(exp_dir):
         axes[0, i] = plot_mse(axes[0, i], est_error_means, est_error_std, nm_d_ratio, reg_term, title=True)
         axes[1, i] = plot_mse(axes[1, i], est_error_means_scaled,  est_error_std_scaled, nm_d_ratio, reg_term)
 
-        axes[1, -1].legend()
-        axes[0, 0].set_ylabel ('Weight vector est. error') 
-        axes[1, 0].set_ylabel ('Weight vector est. error, scaled') 
-        [axs.set_xlabel ('Iter') for axs in axes[1]]
-        
-        fig.tight_layout()
-        plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + '_est_error.png')
+    axes[1, -1].legend()
+    axes[0, 0].set_ylabel ('Weight vector est. error') 
+    axes[1, 0].set_ylabel ('Weight vector est. error, scaled') 
+    [axs.set_xlabel ('Iter') for axs in axes[1]]
+    
+    fig.tight_layout()
+    plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + '_est_error.png')
         
 # def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
 

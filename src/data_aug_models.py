@@ -10,17 +10,18 @@ import torch
 class Data_augmentation():
     
     @staticmethod
-    def data_aug(ds_train, ds_shared, nodes_preds, A, regularizer_term):
+    def data_aug(ds_train, ds_shared, pred_shared, A, regularizer_term):
         
         """
         nn - number of nodes
         m' - sample size of shared test data
         
-        :param ds_train:         list of (n_clusters*n_ds) local train datasets of sample size n_samples
-        :param ds_shared:        shared dataset
-        :param nodes_preds:      predictions for ds_shared of all nodes, array of size (m', nn)
-        :param A:                row of a symmetric matrix A (weights of edges), array of size (nn,); A_ii=0 (zero diagonal)
-        :param regularizer_term: lambda, float number
+        Args:
+        : ds_train         :         list of (n_clusters*n_ds) local train datasets of sample size n_samples
+        : ds_shared        :         shared dataset, X (m_shared, n_features)
+        : pred_shared      :      predictions for ds_shared of all nodes, array of size (n_nodes, m_shared)
+        : A                :                row of a symmetric matrix A (weights of edges), array of size (nn,); A_ii=0 (zero diagonal)
+        : regularizer_term : lambda, float number
 
         :out X_aug: stacked features X (local train ds), X_shared (stacked n.o. nodes times)
         :out y_aug: stacked labels y (local train ds), nodes_preds (predictions for X_shared at each node)
@@ -29,18 +30,17 @@ class Data_augmentation():
         """
         
         X, y = ds_train[0], ds_train[1].reshape(-1,)
-        X_shared, y_shared = ds_shared[0], ds_shared[1].reshape(-1,)
         
         # Construct augmented dataset
-        nn = nodes_preds.shape[1]
+        nn = pred_shared.shape[0]
         
-        X_shared_repeat = np.tile(X_shared, (nn,1))
+        X_shared_repeat = np.tile(ds_shared, (nn,1))
         X_aug = np.concatenate((X, X_shared_repeat), axis=0)
-        y_aug = np.concatenate((y, nodes_preds.T.reshape(-1,)), axis=0)
+        y_aug = np.concatenate((y, pred_shared.reshape(-1,)), axis=0)
         
         # Format edges' weights A and compute sample weight
         m = y.shape[0] 
-        m_shared = y_shared.shape[0]    
+        m_shared = ds_shared.shape[0]    
     
         A_repeat = np.repeat(A, m_shared, axis=0)
         sample_weight = np.concatenate((np.ones((m,)), np.ones((nn*m_shared,))*(regularizer_term/2)*A_repeat))   

@@ -56,20 +56,19 @@ def get_data(n_clusters, n_ds, n_samples, n_features, noise_scale=1.0):
 
     return ds_train, ds_val, cluster_labels, true_weights
 
-def get_shared_data(k, m_shared, n_features, var=1):
+def get_shared_data(m_shared, n_features, var=1):
 
     """
 
     Create noisy Gaussian regression dataset.
 
-    :param m_shared   : int : n.o. samples in a shared dataset(s)
+    :param m_shared   : int : n.o. samples in a shared dataset
     :param n_features : int : n.o. features of a datapoint
-    :param k          : int : n.o. datasets (m_shared, n_features) to sample 
 
-    :out shared_ds    : array of shape (k, m_shared, n_features), shared dataset(s)
+    :out shared_ds    : array of shape (m_shared, n_features), shared dataset
 
     """
 
-    ds_shared = np.random.normal(0, var, size=(k, m_shared, n_features))
+    ds_shared = np.random.normal(0, var, size=(m_shared, n_features))
     
     return ds_shared

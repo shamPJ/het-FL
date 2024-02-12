@@ -29,7 +29,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, par
     n_features = G[0]["ds_train"][0].shape[1]       # n.o. features of local datasets
 
     # Create shared dataset
-    ds_shared = get_shared_data(1, m_shared, n_features)
+    ds_shared = get_shared_data(m_shared, n_features)
 
     # MSE on local ds incurred by models on each iteration
     mse_train      = np.zeros((n_nodes, n_iters))
@@ -62,7 +62,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, par
             # Get predictions
             pred_train     = model.predict(ds_train[0])
             pred_val       = model.predict(ds_val[0])
-            pred_shared[n] = model.predict(ds_shared[0]).reshape(-1,)
+            pred_shared[n] = model.predict(ds_shared).reshape(-1,)
 
             # Compute loss
             mse_train[n,i] = np.mean((ds_train[1] - pred_train.reshape(-1,1))**2)
@@ -79,7 +79,7 @@ def train(G, A, G_pooled, n_iters=1000, regularizer_term=0.01, m_shared=100, par
     return mse_train, mse_val, mse_val_pooled, est_weights, est_weights_pooled
 
 
-def train_no_A(G, G_pooled, k=5, n_iters=1000, regularizer_term=0.01, m_shared=100, parametric=True): 
+def train_no_A(G, G_pooled, n_neighbours=5, n_iters=1000, regularizer_term=0.01, m_shared=100, parametric=True): 
     
     """
 
@@ -88,7 +88,7 @@ def train_no_A(G, G_pooled, k=5, n_iters=1000, regularizer_term=0.01, m_shared=1
     Args:
     : G                  : list of dicts [dict keys are: model, ds_train, ds_val, ds_shared, cluster_label], represents graph with n_nodes
     : pooled_G           : list of dicts [dict keys are: model, ds_train, ds_val], represents graph with n_cluster nodes (local ds size = n_ds*n_samples). Data belonging to the ith-node is pooled ds of G, belonging to the ith-cluster
-    : k                  : n.o. neighbours to connect to (choose k-lowest ||pred_i - pred_j||^2)
+    : n_neighbours       : n.o. neighbours to connect to (choose k-lowest ||pred_i - pred_j||^2)
     : iters              : int, number of iterations or updates of the local model
     : regularizer_term   : float, scaling factor for GTV term
     : m_shared           : int, size of shared dataset
@@ -108,7 +108,7 @@ def train_no_A(G, G_pooled, k=5, n_iters=1000, regularizer_term=0.01, m_shared=1
     n_features = G[0]["ds_train"][0].shape[1]       # n.o. features of local datasets
 
     # Create shared dataset
-    ds_shared = get_shared_data(1, m_shared, n_features)
+    ds_shared = get_shared_data(m_shared, n_features)
 
     # MSE on local ds incurred by models on each iteration
     mse_train      = np.zeros((n_nodes, n_iters))
@@ -142,7 +142,7 @@ def train_no_A(G, G_pooled, k=5, n_iters=1000, regularizer_term=0.01, m_shared=1
             # Get predictions
             pred_train     = model.predict(ds_train[0])
             pred_val       = model.predict(ds_val[0])
-            pred_shared[n] = model.predict(ds_shared[0]).reshape(-1,)
+            pred_shared[n] = model.predict(ds_shared).reshape(-1,)
 
             # Compute loss
             mse_train[n,i] = np.mean((ds_train[1] - pred_train.reshape(-1,1))**2)
@@ -160,7 +160,7 @@ def train_no_A(G, G_pooled, k=5, n_iters=1000, regularizer_term=0.01, m_shared=1
         for n in range(n_nodes):
             dist_ij = np.mean((pred_shared[n] - pred_shared)**2, axis=-1) # shape (n_nodes,)
             min_dist_idx = np.argsort(dist_ij)
-            min_dist_idx = min_dist_idx[:k]    # choose k neighbors (+1 node itself)
+            min_dist_idx = min_dist_idx[:n_neighbours+1]    # choose n_neighbours neighbors (+1 node itself)
             A[n][min_dist_idx] = 1     # set weight A_ij = 1 for k neighbors
             
         np.fill_diagonal(A, 0) # set self-connections A_ii=0
