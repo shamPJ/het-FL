@@ -160,7 +160,7 @@ def iter_params(config):
                         'n_ds':            n_ds,
                         'n_features' :     n_features,
                         'n_samples_list' : n_samples_list,
-                        'nm_d_ratio' :     [n_ds*x / n_features  for x in n_samples_list]}, f, indent=2)
+                        'd_m_ratio' :     [n_features/ x  for x in n_samples_list]}, f, indent=2)
                 
         # save computed mse and std for each pair (reg.term, sample size)
         np.save(subdir + '/stats/mse_std' + '_' + timestamp + '.npy', [(mse_t, mse_std_t), (mse_v, mse_std_v)])

@@ -232,7 +232,7 @@ def mse_mean_std_scaled(mse_list, mse_pooled_list):
 
     return mse_mean, mse_std
 
-def plot_mse(ax, mse_mean, mse_std, nm_d_ratio, reg_term, title=False):
+def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
 
     """
     
@@ -243,7 +243,7 @@ def plot_mse(ax, mse_mean, mse_std, nm_d_ratio, reg_term, title=False):
     : ax         : matplotlib.axes object
     : mse_mean   : list. Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
     : mse_std    : list. Corresponding standard deviation. 
-    : nm_d_ratio : list of corresponding nm_d_ratio's.
+    : d_m_ratio  : list of corresponding d_m_ratio's.
     : reg_term   : lambda value, reg.term.
 
     Output:
@@ -252,12 +252,12 @@ def plot_mse(ax, mse_mean, mse_std, nm_d_ratio, reg_term, title=False):
     """
     
     n_lines, iters = mse_mean.shape[0], mse_mean.shape[1]
-    assert n_lines == len(nm_d_ratio)
+    assert n_lines == len(d_m_ratio)
     
     for i in range(n_lines):
         y = mse_mean[i]
         y_err = mse_std[i]
-        ax.plot(range(1, iters+1), y, label='nm/d ratio ' + str(nm_d_ratio[i]))
+        ax.plot(range(1, iters+1), y, label='d/m ratio ' + str(d_m_ratio[i]))
         ax.fill_between(range(1, iters+1), y - y_err, y + y_err, alpha=0.2)
         
     ax.spines[['right', 'top']].set_visible(False)
@@ -288,7 +288,7 @@ def load_and_plot_mse(exp_dir, scaled=False):
             param_dict = json.load(file)
 
         # get experiment settings    
-        nm_d_ratio = param_dict['nm_d_ratio']
+        d_m_ratio = param_dict['d_m_ratio']
         reg_term = param_dict['reg_term']
         # load MSE values
         npy_files = glob(f + 'stats/*.npy')
@@ -302,8 +302,8 @@ def load_and_plot_mse(exp_dir, scaled=False):
                     (mse_t, mse_std_t), (mse_v, mse_std_v)= np.load(npy_f)
 
         # plot subplot
-        axes[0, i] = plot_mse(axes[0, i], mse_t, mse_std_t, nm_d_ratio, reg_term, title=True)
-        axes[1, i] = plot_mse(axes[1, i], mse_v, mse_std_v, nm_d_ratio, reg_term)
+        axes[0, i] = plot_mse(axes[0, i], mse_t, mse_std_t, d_m_ratio, reg_term, title=True)
+        axes[1, i] = plot_mse(axes[1, i], mse_v, mse_std_v, d_m_ratio, reg_term)
 
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Training loss') 
@@ -395,7 +395,7 @@ def load_and_plot_est_error(exp_dir):
             param_dict = json.load(file)
 
         # get experiment settings    
-        nm_d_ratio = param_dict['nm_d_ratio']
+        d_m_ratio = param_dict['d_m_ratio']
         reg_term = param_dict['reg_term']
         # load MSE values
         npy_files = glob(f + 'stats/*.npy')
@@ -407,8 +407,8 @@ def load_and_plot_est_error(exp_dir):
                     est_error_means, est_error_std = np.load(npy_f)
 
         # plot subplot
-        axes[0, i] = plot_mse(axes[0, i], est_error_means, est_error_std, nm_d_ratio, reg_term, title=True)
-        axes[1, i] = plot_mse(axes[1, i], est_error_means_scaled,  est_error_std_scaled, nm_d_ratio, reg_term)
+        axes[0, i] = plot_mse(axes[0, i], est_error_means, est_error_std, d_m_ratio, reg_term, title=True)
+        axes[1, i] = plot_mse(axes[1, i], est_error_means_scaled,  est_error_std_scaled, d_m_ratio, reg_term)
 
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Weight vector est. error') 
