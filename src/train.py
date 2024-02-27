@@ -157,6 +157,7 @@ def train_no_A(G, G_pooled, n_neighbours=5, n_iters=1000, regularizer_term=0.01,
             mse_val_pooled[n, i] = np.mean((ds_val[1] - pred_pooled.reshape(-1,1))**2)  # shape of ds_train/val[1] is (m, 1) 
         
         # 2. Update agjacency matrix A by choosing neighbors with lowest ||pred_i - pred_j||^2
+        A = np.zeros((n_nodes, n_nodes))    # zero out adjacency matrix
         for n in range(n_nodes):
             dist_ij = np.mean((pred_shared[n] - pred_shared)**2, axis=-1) # shape (n_nodes,)
             min_dist_idx = np.argsort(dist_ij)
