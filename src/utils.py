@@ -265,18 +265,21 @@ def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
     ax.set_xticks(range(0, iters+1, int(iters / 4)))
     return ax
 
-def load_and_plot_mse(exp_dir, scaled=False):
+def load_and_plot_mse(p_dir, scaled=False):
 
     """
     Args:
-    : exp_dir : str, path to saved .npy files in /stats dir. npy file is in format [(mse_t, mse_std_t), (mse_v, mse_std_v)]
+    : p_dir : str, path to saved .npy files in /stats dir. npy file is in format [(mse_t, mse_std_t), (mse_v, mse_std_v)]
+            p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_JOB_ID"]
 
     Out:
 
     """
 
-    subdirs = glob(os.getcwd() + '/out/' + exp_dir + '/*/')
+    # list subdirs ".../reg_term_0/" etc.
+    subdirs = glob(p_dir + '/*/')
     # indexes for ordered subdirs by increasing lambda
+    # subdir.split('/')[-2] gives 'reg_term_0'
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
     fig, axes = plt.subplots(2, len(subdirs), sharey=True, figsize=(8,8))
