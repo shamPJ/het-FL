@@ -203,7 +203,7 @@ def repeat_train(n_samples, config):
     models, models_pooled = config['models'], config['models_pooled']
     p_in, p_out = config['p_in'], config['p_out']
     
-    reg_term, n_samples, n_iters  = config['reg_term'], config['n_samples'], config['n_iters']
+    reg_term, n_iters  = config['reg_term'], config['n_iters']
     repeat_times = config['repeat_times']
     exp_dir = config['exp_dir']
     parametric, adj_matrix = config['parametric'], config['adj_matrix']

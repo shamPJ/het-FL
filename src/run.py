@@ -18,7 +18,7 @@ parser.add_argument("-n_neighbours", "--n_neighbours", default=10, type=int, hel
 parser.add_argument("-n_neighbours_fixed", "--n_neighbours_fixed", default=False, type=bool, help="keep node degree const and equal to n_neighbours (Algo 3) or not (Algo 2), if adjacency matrix is not given")
 
 args = parser.parse_args()
-
+print(os.environ["SLURM_JOB_ID"],os.environ["SLURM_ARRAY_JOB_ID"], os.environ["SLURM_ARRAY_TASK_ID"])
 #======================== EXP SETUP ========================#
 p_in, p_out, lrate, n_iters, reg_term = args.p_in, args.p_out, args.lrate, args.n_iters, args.reg_term
 adj_matrix = args.adj_matrix
@@ -39,10 +39,11 @@ models = [Linreg_Torch(n_features, lr=lrate, bias=False) for i in range(n_cluste
 models_pooled = [Linreg_Torch(n_features, lr=lrate, bias=False) for i in range(n_clusters)]
 
 # parent directory
-p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_JOB_ID"]
+print(os.getcwd())
+p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_ARRAY_JOB_ID"]
 # subdirs for each reg. term value
 exp_dir =  p_dir + '/reg_term_' + str(reg_term)
-os.mkdir(exp_dir)
+os.makedirs(exp_dir)
 
 # Config
 config = {
@@ -58,13 +59,14 @@ config = {
             'p_out':              p_out,
             'lrate':              lrate,
             'adj_matrix':         adj_matrix,
-            'n_neighbours':       n_neighbours,
-            'n_neighbours_fixed': n_neighbours_fixed,
             'parametric':         True,
             'exp_dir':            exp_dir,
             'models_pooled':      models_pooled,
             'models':             models
         }
+
+if not adj_matrix: config['n_neighbours'] = 'n_neighbours'
+if not adj_matrix: config['n_neighbours_fixed'] = 'n_neighbours_fixed'
 
 Confs = [config for i in range(len(n_samples_list))]
 out = Parallel(n_jobs=-1)(delayed(repeat_train)(n_samples, config) for n_samples, config in zip(n_samples_list, Confs))

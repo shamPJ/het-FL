@@ -270,7 +270,7 @@ def load_and_plot_mse(p_dir, scaled=False):
     """
     Args:
     : p_dir : str, path to saved .npy files in /stats dir. npy file is in format [(mse_t, mse_std_t), (mse_v, mse_std_v)]
-            p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_JOB_ID"]
+            p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_ARRAY_JOB_ID"]
 
     Out:
 
@@ -320,7 +320,7 @@ def load_and_plot_mse(p_dir, scaled=False):
         file_name = '.png'
     
     fig.tight_layout()
-    plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + file_name)
+    plt.savefig(p_dir + file_name)
 
 def param_est_error(true_weights, est_weights, cluster_labels):
 
@@ -385,7 +385,7 @@ def load_and_plot_est_error(exp_dir):
 
     """
 
-    subdirs = glob(os.getcwd() + '/out/' + exp_dir + '/*/')
+    subdirs = glob(exp_dir + '/*/')
     # indexes for ordered subdirs by increasing lambda
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
@@ -419,7 +419,7 @@ def load_and_plot_est_error(exp_dir):
     [axs.set_xlabel ('Iter') for axs in axes[1]]
     
     fig.tight_layout()
-    plt.savefig(os.getcwd() + '/out/' + exp_dir + '/' + str(exp_dir) + '_est_error.png')
+    plt.savefig(exp_dir + '_est_error.png')
         
 # def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
 

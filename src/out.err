@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/scratch/work/abduras1/het-FL/src/run.py", line 109, in <module>
+    load_and_plot_mse(p_dir)
+  File "/scratch/work/abduras1/het-FL/src/utils.py", line 290, in load_and_plot_mse
+    with open(params[0]) as file:
+              ~~~~~~^^^
+IndexError: list index out of range
+srun: error: csl26: task 0: Exited with exit code 1
+srun: Terminating StepId=477632.0
