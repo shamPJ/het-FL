@@ -287,7 +287,8 @@ def load_and_plot_mse(p_dir, scaled=False):
     for i, ind in enumerate(indx):
         f = subdirs[ind]
         params = glob(f + 'stats/*.json')
-        with open(params[0]) as file:
+        print("f, params", f, params)
+	with open(params[0]) as file:
             param_dict = json.load(file)
 
         # get experiment settings    
