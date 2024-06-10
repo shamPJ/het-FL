@@ -278,6 +278,7 @@ def load_and_plot_mse(p_dir, scaled=False):
 
     # list subdirs ".../reg_term_0/" etc.
     subdirs = glob(p_dir + '/*/')
+    print("subdirs", subdirs, os.environ["SLURM_ARRAY_JOB_ID"], os.environ["SLURM_ARRAY_TASK_ID"])
     # indexes for ordered subdirs by increasing lambda
     # subdir.split('/')[-2] gives 'reg_term_0'
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
@@ -288,6 +289,8 @@ def load_and_plot_mse(p_dir, scaled=False):
         f = subdirs[ind]
         params = glob(f + 'stats/*.json')
         print("f, params", f, params)
+        print("len", len(params))
+        print(params[0])
         with open(params[0]) as file:
             param_dict = json.load(file)
 

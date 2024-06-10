@@ -18,7 +18,6 @@ parser.add_argument("-n_neighbours", "--n_neighbours", default=10, type=int, hel
 parser.add_argument("-n_neighbours_fixed", "--n_neighbours_fixed", default=False, type=bool, help="keep node degree const and equal to n_neighbours (Algo 3) or not (Algo 2), if adjacency matrix is not given")
 
 args = parser.parse_args()
-print(os.environ["SLURM_JOB_ID"],os.environ["SLURM_ARRAY_JOB_ID"], os.environ["SLURM_ARRAY_TASK_ID"])
 #======================== EXP SETUP ========================#
 p_in, p_out, lrate, n_iters, reg_term = args.p_in, args.p_out, args.lrate, args.n_iters, args.reg_term
 adj_matrix = args.adj_matrix
@@ -39,7 +38,6 @@ models = [Linreg_Torch(n_features, lr=lrate, bias=False) for i in range(n_cluste
 models_pooled = [Linreg_Torch(n_features, lr=lrate, bias=False) for i in range(n_clusters)]
 
 # parent directory
-print(os.getcwd())
 p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_ARRAY_JOB_ID"]
 # subdirs for each reg. term value
 exp_dir =  p_dir + '/reg_term_' + str(reg_term)
@@ -106,6 +104,6 @@ np.save(exp_dir + '/stats/est_error_mean_std.npy', (est_error_means, est_error_s
 np.save(exp_dir + '/stats/est_error_mean_std_scaled.npy', (est_error_means_scaled, est_error_std_scaled))
 
 # plotting func
-load_and_plot_mse(p_dir)
-load_and_plot_mse(p_dir, scaled=True)
-load_and_plot_est_error(p_dir)
+# load_and_plot_mse(p_dir)
+# load_and_plot_mse(p_dir, scaled=True)
+# load_and_plot_est_error(p_dir)

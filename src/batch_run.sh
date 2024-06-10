@@ -13,4 +13,4 @@ esac
 
 module load mamba
 source activate hetFL
-srun python run.py --reg_term=$REG --p_in 1 --p_out 0 --n_iters 10 
+srun python run.py --reg_term=$REG --p_in 1 --p_out 0
