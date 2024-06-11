@@ -25,7 +25,7 @@ if not adj_matrix: n_neighbours, n_neighbours_fixed = args.n_neighbours, args.n_
 # repeat experiment number of times
 repeat_times = 10
 # noise scale for synthetic data
-noise_val = 1.0
+noise_val = 0.0
 # data generation params
 n_clusters, n_ds, n_features, m_shared = 3, 50, 10, 100
 
