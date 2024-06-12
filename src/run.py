@@ -102,8 +102,3 @@ np.save(exp_dir + '/stats/mse_std.npy', [(mse_t, mse_std_t), (mse_v, mse_std_v)]
 np.save(exp_dir + '/stats/mse_std_scaled.npy', [(mse_t_scaled, mse_std_t_scaled), (mse_v_scaled, mse_std_v_scaled)])
 np.save(exp_dir + '/stats/est_error_mean_std.npy', (est_error_means, est_error_std))
 np.save(exp_dir + '/stats/est_error_mean_std_scaled.npy', (est_error_means_scaled, est_error_std_scaled))
-
-# plotting func
-# load_and_plot_mse(p_dir)
-# load_and_plot_mse(p_dir, scaled=True)
-# load_and_plot_est_error(p_dir)
