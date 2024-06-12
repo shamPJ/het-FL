@@ -8,8 +8,8 @@
 
 case $SLURM_ARRAY_TASK_ID in
    0)  REG=0 ;;
-   1)  REG=0.5 ;;
-   2)  REG=1 ;;
+   1)  REG=1 ;;
+   2)  REG=10 ;;
 esac
 
 module load mamba
