@@ -2,13 +2,14 @@
 #SBATCH --time=04:00:00
 #SBATCH --mem=4G
 #SBATCH --job-name=hetfl
-#SBATCH --array=0-1
+#SBATCH --array=0-2
 #SBATCH --error=out.err
 #SBATCH --cpus-per-task=10
 
 case $SLURM_ARRAY_TASK_ID in
    0)  REG=0 ;;
    1)  REG=0.5 ;;
+   2)  REG=1 ;;
 esac
 
 module load mamba
