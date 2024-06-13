@@ -5,7 +5,7 @@ import numpy as np
 import os
 from pytorch_models import Linreg_Torch
 from train import repeat_train
-from utils import mse_mean_std, mse_mean_std_scaled, load_and_plot_mse, load_and_plot_est_error
+from utils import mean_sd, mean_sd_scaled
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p_in", "--p_in", default=0.8, type=float, help="within cluster edge prob.")
@@ -77,14 +77,14 @@ mse_train_pooled_list, mse_val_pooled_list = [tpl[2] for tpl in out], [tpl[3] fo
 est_error_list, est_error_pooled_list = [tpl[4] for tpl in out], [tpl[5] for tpl in out]
 
 # compute average across all runs of average across all nodes MSEs 
-mse_t, mse_std_t = mse_mean_std(mse_train_list)
-mse_v, mse_std_v = mse_mean_std(mse_val_list)
-mse_t_scaled, mse_std_t_scaled = mse_mean_std_scaled(mse_train_list, mse_train_pooled_list)
-mse_v_scaled, mse_std_v_scaled = mse_mean_std_scaled(mse_val_list, mse_val_pooled_list)
+mse_t, mse_std_t = mean_sd(mse_train_list)
+mse_v, mse_std_v = mean_sd(mse_val_list)
+mse_t_scaled, mse_std_t_scaled = mean_sd_scaled(mse_train_list, mse_train_pooled_list)
+mse_v_scaled, mse_std_v_scaled = mean_sd_scaled(mse_val_list, mse_val_pooled_list)
 
 # weight vector est. error mean and std over repeatitions 
-est_error_means, est_error_std = mse_mean_std(est_error_list)
-est_error_means_scaled, est_error_std_scaled = mse_mean_std_scaled(est_error_list, est_error_pooled_list)
+est_error_means, est_error_std = mean_sd(est_error_list)
+est_error_means_scaled, est_error_std_scaled = mean_sd_scaled(est_error_list, est_error_pooled_list)
 
 os.mkdir(exp_dir + '/stats')
 with open(exp_dir + '/stats/params.json', 'w') as f:

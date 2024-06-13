@@ -2,9 +2,9 @@ from glob import glob
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import torch 
 
+#============================================= PYTORCH MANUAL CHECK =====================================================#
 def fwd_check(ds, model):
     # Check manually fwd step [only linear model!]
     X, y = ds[0], ds[1]
@@ -61,41 +61,9 @@ def bckwd_check(ds, ds_test, pred_test, A, model):
     dw_torch = model.model.weight.grad.detach().numpy().reshape(-1,1)
     np.testing.assert_allclose(dw_torch, dw, rtol=1e-05)
 
-#==================================== PLOTTING SINGLE EXPERIMENT ======================================#
+#================================================== HELPER PLOT =========================================================#
+#==================================== MSE of predictions of the nodes on shared ds ======================================#
 
-def plot_weight_dist(G, true_weights):
-
-    """
-    
-    Compute similarity (sq. L2 distance) between learnt weight vector of a pytorch linear model and true weight vector for all clusters
-    and plot results.
-
-    Note - set bias=False for linear model
-
-    Args:
-    : G            : list of (n_clusters*n_ds) python dicts (graph nodes) where each dict (node)  contain local train/ val datasets, model and shared dataset
-    : true_weights : array of shape (n_clusters, n_features), true weight vector for each cluster
-
-    Output:
-    : dist         : array of shape (n_nodes, n_clusters)
-
-    """
-
-    n_nodes, n_clusters = len(G), len(true_weights)
-    dist = np.zeros((n_nodes, n_clusters))
-
-    for i in range(n_nodes):
-        model_params = G[i]['model'].get_params()
-        print("model_params.shape, true_weights.shape", model_params.shape, true_weights.shape)
-        dist[i] = np.sum((model_params - true_weights)**2, axis=1)
-
-    plt.title("Sq. L2 dist. b/ learnt weight vector of a node and true vectors of 3 clusters")
-    plt.imshow(dist, cmap="coolwarm")
-    plt.colorbar()
-    plt.show()
-
-    return dist
-    
 def compute_mse(preds, n_clusters):
 
     """
@@ -172,67 +140,67 @@ def plot_preds_similarity(A, preds_list, n_clusters, n_iters):
     fig.tight_layout()
     plt.show()
 
-#==================================== PLOTTING HYPERPARAMS ======================================#
+#============================================== COMPUTE STATS and PLOT ==================================================#
 
-def mse_mean_std(mse_local_list):
+def mean_sd(loss_list):
 
     """
 
-    Average MSE (or other loss) values (across all repetitions and nodes for each iteration) for each sample size. STD is computed across `repeat_times`.
+    Average MSE (or other loss/error) values (across all repetitions and nodes for each iteration) for each sample size. SD is computed across `repeat_times`.
 
     Args:
-    : mse_local_list : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) 
+    : loss_list : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) 
                        containing MSE for repeat_times runs for each node in the graph for each iteration. 
 
     Output:
-    : mse_local_mean : list with len(n_samples) elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
-    : mse_local_std  : list with len(n_samples) elements. Each element is an array (n_iters). Corresponding standard deviation across all runs (). 
+    : mean_list : list with len(n_samples) elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : sd_list   : list with len(n_samples) elements. Each element is an array (n_iters). Corresponding standard deviation across all runs (). 
 
     """
 
-    mse_local_mean, mse_local_std = [], []
+    mean_list, sd_list = [], []
 
-    for mse_local in mse_local_list:
-        # mse_local shape is (repeat_times, n_nodes, n_iters)
-        # compute average across all dims
-        mse_local_mean.append(np.mean(mse_local, (0,1)))
-        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
-        std = np.std(np.mean(mse_local, axis=1), axis=0)
-        mse_local_std.append(std)
+    for loss in loss_list:
+        # loss shape is (repeat_times, n_nodes, n_iters)
+        # compute average across (repeat_times, n_nodes) dims
+        mean_list.append(np.mean(loss, axis=(0,1)))
+        # first average loss across nodes, then compute sd across `repeat_times` (i.e. number of runs)
+        sd = np.std(np.mean(loss, axis=1), axis=0)
+        sd_list.append(sd)
 
-    return mse_local_mean, mse_local_std
+    return mean_list, sd_list
 
-def mse_mean_std_scaled(mse_list, mse_pooled_list):
+def mean_sd_scaled(loss_list, loss_list_pooled):
     
     """
 
-    Scaled average MSE (or other loss) values (across all repetitions and nodes) for each sample size. STD is computed across `repeat_times`. 
+    Scaled average MSE (or other loss) values (across all repetitions and nodes) for each sample size. SD is computed across `repeat_times`. 
 
     Args:
-    : mse_list        : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing training loss for repeat_times runs for each node in the graph. 
-    : mse_pooled_list : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing validation loss for repeat_times runs for each "oracle" model on the corresponding local node's val ds. 
+    : loss_list        : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing training loss for repeat_times runs for each node in the graph. 
+    : loss_list_pooled : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing validation loss for repeat_times runs for each "oracle" model on the corresponding local node's val ds. 
 
     Output:
-    : mse_mean        : list with len(n_samples) elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
-    : mse_std         : list with len(n_samples) elements. Each element is an array (n_iters). Corresponding standard deviation. 
+    : loss_mean        : list with len(n_samples) elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : loss_sd          : list with len(n_samples) elements. Each element is an array (n_iters). Corresponding standard deviation. 
 
     """
     
-    mse_mean, mse_std = [], []
+    loss_mean, loss_sd = [], []
 
-    for mse, mse_pooled in zip(mse_list, mse_pooled_list):
+    for loss, loss_pooled in zip(loss_list, loss_list_pooled):
         
         # scale local MSE vals
-        mse_scaled = mse / mse_pooled
-        # compute average across all dims
-        mse_mean.append(np.mean(mse_scaled, axis=(0,1)))
-        # first average mse across nodes, then compute std across `repeat_times` (i.e. number of runs)
-        std = np.std(np.mean(mse_scaled, axis=1), axis=0)
-        mse_std.append(std)
+        loss_scaled = loss / loss_pooled
+        # compute average across (repeat_times, n_nodes) dims
+        loss_mean.append(np.mean(loss_scaled, axis=(0,1)))
+        # first average loss across nodes, then compute sd across `repeat_times` (i.e. number of runs)
+        sd = np.std(np.mean(loss_scaled, axis=1), axis=0)
+        loss_sd.append(sd)
 
-    return mse_mean, mse_std
+    return loss_mean, loss_sd
 
-def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
+def plot_mean_sd(ax, mean_list, sd_list, d_m_ratio, reg_term, title=False):
 
     """
     
@@ -241,7 +209,7 @@ def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
 
     Args:
     : ax         : matplotlib.axes object
-    : mse_mean   : list. Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
+    : mean_list  : list. Each element is an average across all runs of average across all nodes MSEs for each hyperparam combination.
     : mse_std    : list. Corresponding standard deviation. 
     : d_m_ratio  : list of corresponding d_m_ratio's.
     : reg_term   : lambda value, reg.term.
@@ -251,12 +219,12 @@ def plot_mse(ax, mse_mean, mse_std, d_m_ratio, reg_term, title=False):
 
     """
     
-    n_lines, iters = mse_mean.shape[0], mse_mean.shape[1]
+    n_lines, iters = mean_list.shape[0], mean_list.shape[1]
     assert n_lines == len(d_m_ratio)
     
     for i in range(n_lines):
-        y = mse_mean[i]
-        y_err = mse_std[i]
+        y = mean_list[i]
+        y_err = sd_list[i]
         ax.plot(range(1, iters+1), y, label='d/m ratio ' + str(d_m_ratio[i]))
         ax.fill_between(range(1, iters+1), y - y_err, y + y_err, alpha=0.2)
         
@@ -305,8 +273,8 @@ def load_and_plot_mse(p_dir, scaled=False):
                     (mse_t, mse_std_t), (mse_v, mse_std_v)= np.load(npy_f)
 
         # plot subplot
-        axes[0, i] = plot_mse(axes[0, i], mse_t, mse_std_t, d_m_ratio, reg_term, title=True)
-        axes[1, i] = plot_mse(axes[1, i], mse_v, mse_std_v, d_m_ratio, reg_term)
+        axes[0, i] = plot_mean_sd(axes[0, i], mse_t, mse_std_t, d_m_ratio, reg_term, title=True)
+        axes[1, i] = plot_mean_sd(axes[1, i], mse_v, mse_std_v, d_m_ratio, reg_term)
 
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Training loss') 
@@ -320,7 +288,7 @@ def load_and_plot_mse(p_dir, scaled=False):
         file_name = '.png'
     
     fig.tight_layout()
-    plt.savefig(p_dir + file_name)
+    plt.savefig(p_dir + '/' + p_dir.split(sep='/')[-1] + file_name)
 
 def param_est_error(true_weights, est_weights, cluster_labels):
 
@@ -375,17 +343,17 @@ def param_est_error_pooled(true_weights, est_weights_pooled, cluster_labels):
 
     return est_error_pooled.T
 
-def load_and_plot_est_error(exp_dir):
+def load_and_plot_est_error(p_dir):
 
     """
     Args:
-    : exp_dir : str, path to saved .npy files in /stats dir. npy file is in format [mse_t, mse_std_t]
+    : p_dir : str, path to saved .npy files in /stats dir. npy file is in format [mse_t, mse_std_t]
 
     Out:
 
     """
 
-    subdirs = glob(exp_dir + '/*/')
+    subdirs = glob(p_dir + '/*/')
     # indexes for ordered subdirs by increasing lambda
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
@@ -410,8 +378,8 @@ def load_and_plot_est_error(exp_dir):
                     est_error_means, est_error_std = np.load(npy_f)
 
         # plot subplot
-        axes[0, i] = plot_mse(axes[0, i], est_error_means, est_error_std, d_m_ratio, reg_term, title=True)
-        axes[1, i] = plot_mse(axes[1, i], est_error_means_scaled,  est_error_std_scaled, d_m_ratio, reg_term)
+        axes[0, i] = plot_mean_sd(axes[0, i], est_error_means, est_error_std, d_m_ratio, reg_term, title=True)
+        axes[1, i] = plot_mean_sd(axes[1, i], est_error_means_scaled,  est_error_std_scaled, d_m_ratio, reg_term)
 
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Weight vector est. error') 
@@ -419,50 +387,4 @@ def load_and_plot_est_error(exp_dir):
     [axs.set_xlabel ('Iter') for axs in axes[1]]
     
     fig.tight_layout()
-    plt.savefig(exp_dir + '_est_error.png')
-        
-# def save_and_plot(exp_results, model_hyperparams, model_hyperparams_name, reg_term_list, n_samples_list, name):
-
-#     """
-
-#     Save computed average MSE's and STD's for experiment with different model hyperparams, regularization and local dataset size.
-#     `k` is the number of hyperparams (reg_term * n_samples) combinations. 
-    
-#     Args:
-#     : exp_results       : list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
-#                         mse_train/val is a list with k elements. Each element is an array (n_iters) - 
-#                         an average across all runs of average across all nodes MSEs for each hyperparam combination {reg_term, n_samples}.
-#     : model_hyperparams : list of model hyperparams, e.g. lrate, tree depth etc.
-#     : reg_term_list     : list with k elements (floats). Penalty term values used in `iter_params` func.
-#     : n_samples_list    : list with k elements (ints). Sizes of the local dataset used in `iter_params` func.
-
-#     """
-
-#     with open('out/img/' + name.replace(' ', '_') + '.json', 'w') as f:
-#         json.dump(exp_results, f)
-
-#     titles = ['Train ds', 'Validation ds']
-
-#     fig, axes = plt.subplots(len(model_hyperparams), 2, sharey=True, sharex=True, figsize=(8,8))
-
-#     for i in range(len(model_hyperparams)):
-#         # get experiment results for ith value of model hyperparam
-#         # plot_list is a list [(mse_train, mse_std_train), (mse_val, mse_std_val)]
-#         plot_list = exp_results[i]
-#         axs = axes[i]
-
-#         for ax, data, title in zip(axs, plot_list, titles):
-#             mse = data[0]
-#             mse_std = data[1]
-#             plot_mse(ax, mse, mse_std, reg_term_list, n_samples_list)
-#             ax.set_title(title + " " + model_hyperparams_name + ' = ' + str(model_hyperparams[i]))
-    
-#     [axs[0].set_ylabel ('Loss') for axs in axes]
-
-#     axes[-1,0].set_xlabel ('Training ds size')
-#     axes[-1,1].set_xlabel ('Training ds size')
-
-#     plt.legend()
-#     fig.tight_layout()
-#     plt.savefig("out/img/" + name.replace(' ', '_') + ".png")
-#     plt.show()
+    plt.savefig(p_dir + '/' + p_dir.split(sep='/')[-1] + '_est_error.png')
