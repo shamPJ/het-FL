@@ -220,7 +220,7 @@ def repeat_train(n_samples, config):
     # Estimated error for parameter vector 
     est_error_array        = np.zeros((repeat_times, n_nodes, n_iters))
     est_error_pooled_array = np.zeros((repeat_times, n_nodes, n_iters))
-    
+   
     # Repeat train() with hyperparams {reg_term, n_samples} 
     for i in range(repeat_times):
         # Copy models for training in current repetition
@@ -239,7 +239,7 @@ def repeat_train(n_samples, config):
             mse_train, mse_val, mse_train_pooled, mse_val_pooled, est_weights, est_weights_pooled = train(G, A, G_pooled, n_iters=n_iters, regularizer_term=reg_term, m_shared=m_shared, parametric=parametric)
         else:
             mse_train, mse_val, mse_train_pooled, mse_val_pooled, est_weights, est_weights_pooled = train_no_A(G, G_pooled, n_neighbours=n_neighbours, n_neighbours_fixed=n_neighbours_fixed, n_iters=n_iters, regularizer_term=reg_term, m_shared=m_shared, parametric=parametric)
-
+        
         # Save mse on a local ds
         mse_train_array[i] = mse_train
         mse_val_array[i] = mse_val
@@ -270,7 +270,12 @@ def repeat_train(n_samples, config):
     np.save(subdir + '/mse_train_pooled.npy', mse_train_pooled_array)
     np.save(subdir + '/mse_val_pooled.npy', mse_val_pooled_array)
 
-    np.save(subdir + '/est_weights.npy', est_error_array)
-    np.save(subdir + '/est_weights_pooled.npy', est_error_pooled_array)
+    np.save(subdir + '/est_error.npy', est_error_array)
+    np.save(subdir + '/est_error_pooled.npy', est_error_pooled_array)
+
+    # FOR DEBUG, save true weight vector, est, est_pooled for the last rep
+    np.save(subdir + '/true_weights.npy', true_weights)
+    np.save(subdir + '/est_weights.npy', est_weights)
+    np.save(subdir + '/est_weights_pooled.npy', est_weights_pooled)
 
     return mse_train_array, mse_val_array, mse_train_pooled_array, mse_val_pooled_array, est_error_array, est_error_pooled_array
