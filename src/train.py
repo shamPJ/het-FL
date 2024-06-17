@@ -208,7 +208,7 @@ def repeat_train(n_samples, config):
     exp_dir = config['exp_dir']
     parametric, adj_matrix = config['parametric'], config['adj_matrix']
     if not adj_matrix: n_neighbours, n_neighbours_fixed = config['n_neighbours'], config['n_neighbours_fixed']
-    
+    print("adj_matrix", adj_matrix)
     n_nodes = n_clusters * n_ds
 
     # Arrays to store repeatitions of experiment

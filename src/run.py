@@ -21,6 +21,7 @@ args = parser.parse_args()
 #======================== EXP SETUP ========================#
 p_in, p_out, lrate, n_iters, reg_term = args.p_in, args.p_out, args.lrate, args.n_iters, args.reg_term
 adj_matrix = args.adj_matrix
+print(adj_matrix)
 if not adj_matrix: n_neighbours, n_neighbours_fixed = args.n_neighbours, args.n_neighbours_fixed
 # repeat experiment number of times
 repeat_times = 10
@@ -39,6 +40,7 @@ models_pooled = [Linreg_Torch(n_features, lr=lrate, bias=False) for i in range(n
 
 # parent directory
 p_dir = '/scratch/work/abduras1/het-FL/out/Linreg_Torch_' + os.environ["SLURM_ARRAY_JOB_ID"]
+# p_dir = os.getcwd()
 # subdirs for each reg. term value
 exp_dir =  p_dir + '/reg_term_' + str(reg_term)
 os.makedirs(exp_dir)
@@ -63,8 +65,8 @@ config = {
             'models':             models
         }
 
-if not adj_matrix: config['n_neighbours'] = 'n_neighbours'
-if not adj_matrix: config['n_neighbours_fixed'] = 'n_neighbours_fixed'
+if not adj_matrix: config['n_neighbours'] = n_neighbours
+if not adj_matrix: config['n_neighbours_fixed'] = n_neighbours_fixed
 
 Confs = [config for i in range(len(n_samples_list))]
 out = Parallel(n_jobs=-1)(delayed(repeat_train)(n_samples, config) for n_samples, config in zip(n_samples_list, Confs))
