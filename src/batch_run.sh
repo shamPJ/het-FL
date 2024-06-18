@@ -14,4 +14,4 @@ esac
 
 module load mamba
 source activate hetFL
-srun python run.py --reg_term=$REG 
+srun python run.py --reg_term=$REG --n_neighbours 50

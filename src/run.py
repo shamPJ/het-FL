@@ -21,7 +21,7 @@ args = parser.parse_args()
 #======================== EXP SETUP ========================#
 p_in, p_out, lrate, n_iters, reg_term = args.p_in, args.p_out, args.lrate, args.n_iters, args.reg_term
 adj_matrix = args.adj_matrix
-print(adj_matrix)
+
 if not adj_matrix: n_neighbours, n_neighbours_fixed = args.n_neighbours, args.n_neighbours_fixed
 # repeat experiment number of times
 repeat_times = 10

@@ -208,7 +208,7 @@ def repeat_train(n_samples, config):
     exp_dir = config['exp_dir']
     parametric, adj_matrix = config['parametric'], config['adj_matrix']
     if not adj_matrix: n_neighbours, n_neighbours_fixed = config['n_neighbours'], config['n_neighbours_fixed']
-    print("adj_matrix", adj_matrix)
+
     n_nodes = n_clusters * n_ds
 
     # Arrays to store repeatitions of experiment
@@ -272,10 +272,5 @@ def repeat_train(n_samples, config):
 
     np.save(subdir + '/est_error.npy', est_error_array)
     np.save(subdir + '/est_error_pooled.npy', est_error_pooled_array)
-
-    # FOR DEBUG, save true weight vector, est, est_pooled for the last rep
-    np.save(subdir + '/true_weights.npy', true_weights)
-    np.save(subdir + '/est_weights.npy', est_weights)
-    np.save(subdir + '/est_weights_pooled.npy', est_weights_pooled)
 
     return mse_train_array, mse_val_array, mse_train_pooled_array, mse_val_pooled_array, est_error_array, est_error_pooled_array
