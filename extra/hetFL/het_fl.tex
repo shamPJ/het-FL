@@ -70,7 +70,7 @@ and  regularizer
 	\label{alg_X_param}
 	{\bf Input}: empirical graph $\graph$ with edge weights $A_{ij}$; 
 	local loss $L_{(i)}{(\cdot)}$; shared dataset $D^{(test)} = \{\mathbf{x}^{(1)}, ..., \mathbf{x}^{(m')}\}$; GTV parameter $\lambda$; \\
-	{\bf Initialize}: $k:=0; \widehat{h}_{0}^{(i)} \!\equiv\!$ for all nodes $i \in \mathcal{V}$.
+	{\bf Initialize}: $k:=0;$ predictions on shared set $\{\widehat{h}_{0}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}:=0$ for all nodes $i \in \mathcal{V}$.
 	\begin{algorithmic}[1]
 		\While{stopping criterion is not met do}
 		\For{all nodes $i \in \mathcal{V}$ in parallel}
@@ -85,110 +85,140 @@ and  regularizer
 		\EndFor
 		\State $k := k+1$
 		\EndWhile
-			  \Ensure local $\widehat{h}^{(i)} := \widehat{h}_{k+1}^{(i)}$ for all nodes $i \in \mathcal{V}$
 	\end{algorithmic}
 \end{algorithm}
 
-For the experiment we use linear model implemented with pytorch (no bias, optimizer SGD learning rate 0.01). We try different local dataset sizes $m_i =$ \{2, 3, 5, 10, 20\} and regularization strength $\lambda =$ \{0, 0.1, 0.5\}. Tried ratio $|\mathcal{C}^{(i)}|m_i / d = \{1, 1.5, 2.5, 5, 10\}$ or $d / m_i = \{5, 3.3, 2, 1, 0.5\}$ 
+For the experiment we use linear model implemented with pytorch (no bias, optimizer SGD learning rate 0.01). We try different local dataset sizes $m_i =$ \{2, 3, 5, 10, 20\} and regularization strength $\lambda =$ \{0, 1, 5\}. Tried ratio $|\mathcal{C}^{(i)}|m_i / d = \{1, 1.5, 2.5, 5, 10\}$ or $d / m_i = \{5, 3.3, 2, 1, 0.5\}$ 
 
 As stopping criterion in Algorithm 1, we use a fixed number of R = 2000 iterations. 
 For pytorch models one iteration is equivalent to one gradient step.
 
 The results of the experiments is depicted in Figure 1 as the plot of mean estimation error (mean over 10 repetitions of the experiment for each pair of $\{\lambda, m_i \}$).
 
-\begin{equation}
+\begin{equation} \label{eq:4}
 \frac{1}{N} \sum_{i=1}^{N} ||\mathbf{\overline{w}}^{(i)} - \mathbf{\widehat{w}}^{(i)}||^2_2
 \end{equation}
 
 On each repetition new local $\mathcal{D}^{(i)}$ (new realizations of feature vectors and cluster-specific weights are drawn) and shared $\mathcal{D}^{(test)}$ (new realizations of feature vectors are drawn) datasets were generated. The shaded region is $\pm$ one standard deviation.  
 
 \begin{figure}[h]
-\includegraphics[width=10cm]{linreg.png}
+\includegraphics[width=10cm]{Linreg_Torch_637015_est_error copy.png}
 \caption{Algorithm 1 weight vector estimation error. Subplots corresponds to different regularization parameter values and lines correspond to different ratio d/m of a feature vector and local dataset size.}
 \end{figure}
 
-\subsubsection{Synthetic Dataset, linreg model, graph is not known}
-
-The variation of Algorithm 1, Algorithm 2a, is used for the case when the graph connectivity is not known. In Algorithm 2a we start with adjacency matrix set to zero and on each iteration we add $p$ links between nodes with smallest discrepancy in predictions on the shared test set $\mathcal{D}^{(test)}$. Thus, on each iteration each node's degree is either increasing or states fixed to $p$.
-
-In another variation, Algorithm 2b, we set adjacency matrix to zero on each iteration and then add $p$ links between nodes with smallest discrepancy in predictions on the shared test set $\mathcal{D}^{(test)}$. Thus, on each iteration each node's degree is fixed to $p$.
-
-\begin{algorithm}[htbp]
-	\caption{a) FedRelax Least-Squares Regression (Adjacency matrix is not known)}
-	\label{alg_X_param}
-	{\bf Input}: empirical graph $\graph$; 
-	local loss $L_{(i)}{(\cdot)}$; shared dataset $D^{(test)} = \{\mathbf{x}^{(1)}, ..., \mathbf{x}^{(m')}\}$; GTV parameter $\lambda$; \\
-	{\bf Initialize}: $k:=0; A:=0; \widehat{h}_{0}^{(i)} \!\equiv\! (???)$ for all nodes $i \in \mathcal{V}$.
-	\begin{algorithmic}[1]
-		\While{stopping criterion is not met do}
-		\For{all nodes $i \in \mathcal{V}$ in parallel}
-		\State share predictions $\{\widehat{h}_{k}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}$, 
-		with neighbours $i' \in \mathcal{N}^{(i)}$ 
-		\State update local hypothesis $\widehat{h}_{k}^{(i)}$ by
-            \begin{multline*}
-            \widehat{h}_{k+1}^{(i)} \in  \arg \min_{h^{(i)} \in \mathcal{H}^{(i)}} 
-            \biggl[ \frac{1}{m_i}  \sum_{r=1}^{m_i} \biggl( y^{(i,r)} - h^{(i)}(\mathbf{x}^{(i,r)})  \biggr)^2 + \\
-            \frac{\lambda}{m'} \sum_{i' \in \mathcal{N}^{(i)}}A_{i,i'}\sum_{r=1}^{m'} \biggl( h^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 \biggr]
-            \end{multline*}
-		\EndFor
-		\State $k := k+1$
-        \For{all nodes $i \in \mathcal{V}$ in parallel}
-        \State Add neighbours for the node $i$ by selecting $p$ nodes $i' \in \mathcal{N}^{(i)}$ with smallest values of
-             \begin{align}
-                \frac{1}{m'} \sum_{r=1}^{m'} \biggl( \widehat{h}_{k}^{(i)}(\mathbf{x}^{(r)}) (???? current local hyp.) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 
-             \end{align}
-        \State Set $A_{i,i'} = 1$ for these $p$ nodes (with smallest discrepancy in prediction on the test set $\mathcal{D}^{(test)}$).
-        
-        \EndFor
-		\EndWhile
-			  \Ensure local $\widehat{h}^{(i)} := \widehat{h}_{k+1}^{(i)}$ for all nodes $i \in \mathcal{V}$
-	\end{algorithmic}
-\end{algorithm}
-
-\begin{figure}[h]
-\includegraphics[width=10cm]{linreg_nneib_3.png}
-\caption{Algorithm 2a. Estimated error for the weight vector with parameter p=3}
-\end{figure}
-
-\begin{figure}[h]
-\includegraphics[width=10cm]{linreg_nneib_5.png}
-\caption{Algorithm 2a. Estimated error for the weight vector with parameter p=5.}
-\end{figure}
-
-\begin{algorithm}[htbp]
-	\caption{b) FedRelax Least-Squares Regression (Adjacency matrix is not known, n.o. neib. is fixed)}
-	\label{alg_X_param}
-	{\bf Input}: empirical graph $\graph$; 
-	local loss $L_{(i)}{(\cdot)}$; shared dataset $D^{(test)} = \{\mathbf{x}^{(1)}, ..., \mathbf{x}^{(m')}\}$; GTV parameter $\lambda$; \\
-	{\bf Initialize}: $k:=0; A:=0; \widehat{h}_{0}^{(i)} \!\equiv\! (???)$ for all nodes $i \in \mathcal{V}$.
-	\begin{algorithmic}[1]
-		\While{stopping criterion is not met do}
-		\For{all nodes $i \in \mathcal{V}$ in parallel}
-		\State share predictions $\{\widehat{h}_{k}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}$, 
-		with neighbours $i' \in \mathcal{N}^{(i)}$ 
-		\State update local hypothesis $\widehat{h}_{k}^{(i)}$ by
-            \begin{multline*}
-            \widehat{h}_{k+1}^{(i)} \in  \arg \min_{h^{(i)} \in \mathcal{H}^{(i)}} 
-            \biggl[ \frac{1}{m_i}  \sum_{r=1}^{m_i} \biggl( y^{(i,r)} - h^{(i)}(\mathbf{x}^{(i,r)})  \biggr)^2 + \\
-            \frac{\lambda}{m'} \sum_{i' \in \mathcal{N}^{(i)}}A_{i,i'}\sum_{r=1}^{m'} \biggl( h^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 \biggr]
-            \end{multline*}
-		\EndFor
-		\State $k := k+1$
-        \For{all nodes $i \in \mathcal{V}$ in parallel}
-        \State \textbf{Init a new adjacent matrix A (all zeros)}
-        \State Add neighbours for the node $i$ by selecting $p$ nodes $i' \in \mathcal{N}^{(i)}$ with smallest values of
-             \begin{align}
-                \frac{1}{m'} \sum_{r=1}^{m'} \biggl( \widehat{h}_{k}^{(i)}(\mathbf{x}^{(r)}) (???? current local hyp.) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 
-             \end{align}
-        \State Set $A_{i,i'} = 1$ for these $p$ nodes (with smallest discrepancy in prediction on the test set $\mathcal{D}^{(test)}$).
-        
-        \EndFor
-		\EndWhile
-			  \Ensure local $\widehat{h}^{(i)} := \widehat{h}_{k+1}^{(i)}$ for all nodes $i \in \mathcal{V}$
-	\end{algorithmic}
-\end{algorithm}
+We can see from the Figure 1, that adding penalty term helps to converge to the true weight vector, the effect more pronounced for the larger d/m ratio. Large values of $\lambda$ leads to sightly higher and noisier weight error estimates, but faster convergence (subplot with $\lambda=5$). 
 
 \newpage
-\subsubsection{ TODO Synthetic Dataset, models of mixed type, graph is not known}
+\subsubsection{Sanity check}
+Below I do sanity check for the case where $p_{in}=1$ and $p_{out}=0$. The expected estimation error (eq.\ref{eq:4}) is  
+
+\begin{equation}
+\begin{split}
+E_{est} & = \mathop{\mathbb{E}}\{||\mathbf{\overline{w}} - \mathbf{\widehat{w}}||^2_2\} \\
+& = \mathop{\mathbb{E}}\{||\mathbf{\widehat{w}}- \mathop{\mathbb{E}}\{\mathbf{\widehat{w}}\}||^2_2\} + 
+\mathop{\mathbb{E}}\{||\mathbf{\overline{w}} - \mathop{\mathbb{E}}\{\mathbf{\widehat{w}}\}||^2_2\}
+\end{split}
+\end{equation}
+
+The first component represents the (expected) variance of the learnt parameter vector $\mathbf{\widehat{w}}$. The second component is referred to as a bias term. It can be shown that the variance term is
+
+\begin{equation} 
+V = \mathop{\mathbb{E}}\{||\mathbf{\widehat{w}}- \mathop{\mathbb{E}}\{\mathbf{\widehat{w}}\}||^2_2\} = \frac{(B^2 + \sigma^2)d}{m-d-1}
+\end{equation}
+
+E.g. for the case $B^2=0, \sigma^2=1, d=10, m=20, |\mathcal{C}^{(i)}|=50$ variance term is $10/(20-1-1)  \approx 1.11$ for a local model and  $10/(20*50-10-1)  \approx 0.01$ for pooled model.
+For $\lambda = 0, p_{in}=1$ and $p_{out}=0$ the scaled estimated error is $\frac{E_{est}}{E_{est\_pooled}} = 1.11/0.01 \approx 111$. For the large values of $\lambda$ the ratio is expected to be close to 1.
+
+\begin{figure}[h]
+\includegraphics[width=10cm]{Linreg_Torch_594391_est_error.png}
+\caption{Algorithm 1 for params $p_{in}=1, p_{out}=0$}
+\end{figure}
+
+From the Figure 2 we can see that according to numerical experiments $\frac{E_{est}}{E_{est\_pooled}} \approx 180$ for the $m=20$, which is somewhat higher than estimate $\approx 111$, but of the same order. Increasing $\lambda$ leads to decrease of estimation error ($\approx 9$ according to numerical experiments).
+
+
+\newpage
+\subsubsection{Synthetic Dataset, linreg model, graph is not known}
+
+The variation of Algorithm 1, Algorithm 2a, is used for the case when the graph connectivity is not known. In Algorithm 2a we start with adjacency matrix set to zero and on each iteration we add $p$ links between nodes with smallest discrepancy in predictions on the shared test set $\mathcal{D}^{(test)}$. Thus, on each iteration each node's degree is either increasing or stays unchanged (but not decreasing). See resulting plots in Fig.3 and 4.
+
+\begin{algorithm}[htbp]
+	\caption{FedRelax Least-Squares Regression (Adjacency matrix is not known, degree of the node is not fixed)}
+	\label{alg:algorithm1}
+	{\bf Input}: empirical graph $\graph$; 
+	local loss $L_{(i)}{(\cdot)}$; shared dataset $D^{(test)} = \{\mathbf{x}^{(1)}, ..., \mathbf{x}^{(m')}\}$; GTV parameter $\lambda$; \\
+	{\bf Initialize}: $k:=0; A:=0;$ predictions on shared set $\{\widehat{h}_{0}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}:=0$ for all nodes $i \in \mathcal{V}$.
+	\begin{algorithmic}[1]
+		\While{stopping criterion is not met do}
+		\For{all nodes $i \in \mathcal{V}$ in parallel}
+		\State share predictions $\{\widehat{h}_{k}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}$, 
+		with neighbours $i' \in \mathcal{N}^{(i)}$ 
+		\State update local hypothesis $\widehat{h}_{k}^{(i)}$ by
+            \begin{multline*}
+            \widehat{h}_{k+1}^{(i)} \in  \arg \min_{h^{(i)} \in \mathcal{H}^{(i)}} 
+            \biggl[ \frac{1}{m_i}  \sum_{r=1}^{m_i} \biggl( y^{(i,r)} - h^{(i)}(\mathbf{x}^{(i,r)})  \biggr)^2 + \\
+            \frac{\lambda}{m'} \sum_{i' \in \mathcal{N}^{(i)}}A_{i,i'}\sum_{r=1}^{m'} \biggl( h^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 \biggr]
+            \end{multline*}
+        \EndFor
+        \For{all nodes $i \in \mathcal{V}$ in parallel}
+        \State Add neighbours (edges) for the node $i$ by selecting $p$ nodes $i' \in \mathcal{V}$ with smallest values of
+             \begin{align}
+                \frac{1}{m'} \sum_{r=1}^{m'} \biggl( \widehat{h}_{k+1}^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k+1}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 
+             \end{align}
+        \State Set $A_{i,i'} = 1$ for these $p$ nodes (with smallest discrepancy in prediction on the test set $\mathcal{D}^{(test)}$).
+        \EndFor
+        \State $k := k+1$
+		\EndWhile
+	\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}[h]
+\includegraphics[width=10cm]{Linreg_Torch_665413_est_error_Algo2a_nn10.png}
+\caption{Algorithm 2a. Estimated error for the weight vector with parameter p=10}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width=10cm]{Linreg_Torch_672336_est_error_Algo2a_nn50.png}
+\caption{Algorithm 2a. Estimated error for the weight vector with parameter p=50.}
+\end{figure}
+
+\newpage
+In another variation, Algorithm 2b, we set adjacency matrix to zero on each iteration and then add $p$ links between nodes with smallest discrepancy in predictions on the shared test set $\mathcal{D}^{(test)}$. Thus, the degree of  a node is fixed to $p$. See resulting plot in Fig.5.
+
+\begin{figure}[h]
+\includegraphics[width=10cm]{Linreg_Torch_673711_est_error_algo2b_nn50.png}
+\caption{Algorithm 2b. Estimated error for the weight vector with parameter p=50.}
+\end{figure}
+
+\begin{algorithm}[htbp]
+	\caption{FedRelax Least-Squares Regression (Adjacency matrix is not known, n.o. neib. is fixed)}
+	\label{alg_X_param}
+	{\bf Input}: empirical graph $\graph$; 
+	local loss $L_{(i)}{(\cdot)}$; shared dataset $D^{(test)} = \{\mathbf{x}^{(1)}, ..., \mathbf{x}^{(m')}\}$; GTV parameter $\lambda$; \\
+	{\bf Initialize}: $k:=0; A:=0;$ predictions on shared set $\{\widehat{h}_{0}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}:=0$ for all nodes $i \in \mathcal{V}$.
+	\begin{algorithmic}[1]
+		\While{stopping criterion is not met do}
+		\For{all nodes $i \in \mathcal{V}$ in parallel}
+		\State share predictions $\{\widehat{h}_{k}^{(i)}(\mathbf{x})\}_{\mathbf{x} \in \mathcal{D}^(test)}$, 
+		with neighbours $i' \in \mathcal{N}^{(i)}$ 
+		\State update local hypothesis $\widehat{h}_{k}^{(i)}$ by
+            \begin{multline*}
+            \widehat{h}_{k+1}^{(i)} \in  \arg \min_{h^{(i)} \in \mathcal{H}^{(i)}} 
+            \biggl[ \frac{1}{m_i}  \sum_{r=1}^{m_i} \biggl( y^{(i,r)} - h^{(i)}(\mathbf{x}^{(i,r)})  \biggr)^2 + \\
+            \frac{\lambda}{m'} \sum_{i' \in \mathcal{N}^{(i)}}A_{i,i'}\sum_{r=1}^{m'} \biggl( h^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 \biggr]
+            \end{multline*}
+		\EndFor
+        \For{all nodes $i \in \mathcal{V}$ in parallel}
+        \State \textbf{Init a new adjacent matrix A (all zeros)}
+        \State Add neighbours for the node $i$ by selecting $p$ nodes $i' \in \mathcal{V}$ with smallest values of
+             \begin{align}
+                \frac{1}{m'} \sum_{r=1}^{m'} \biggl( \widehat{h}_{k+1}^{(i)}(\mathbf{x}^{(r)}) - \widehat{h}_{k+1}^{(i')}(\mathbf{x}^{(r)}) \biggr)^2 
+             \end{align}
+        \State Set $A_{i,i'} = 1$ for these $p$ nodes (with smallest discrepancy in prediction on the test set $\mathcal{D}^{(test)}$).
+        \EndFor
+        \State $k := k+1$
+		\EndWhile
+	\end{algorithmic}
+\end{algorithm}
 
 \end{document}
