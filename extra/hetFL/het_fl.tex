@@ -93,16 +93,18 @@ For the experiment we use linear model implemented with pytorch (no bias, optimi
 As stopping criterion in Algorithm 1, we use a fixed number of R = 2000 iterations. 
 For pytorch models one iteration is equivalent to one gradient step.
 
-The results of the experiments is depicted in Figure 1 as the plot of mean estimation error (mean over 10 repetitions of the experiment for each pair of $\{\lambda, m_i \}$).
-
+The results of the experiments is depicted in Figure 1 as the plot of mean estimation error (mean over 10 repetitions of the experiment for each pair of $\{\lambda, m_i \}$). 
 \begin{equation} \label{eq:4}
 \frac{1}{N} \sum_{i=1}^{N} ||\mathbf{\overline{w}}^{(i)} - \mathbf{\widehat{w}}^{(i)}||^2_2
 \end{equation}
 
+The 2nd row of the Figure 1 shows estimation error scaled by estimation error of the "pooled" model (model trained on all datasets belonging to the same cluster).
+
+
 On each repetition new local $\mathcal{D}^{(i)}$ (new realizations of feature vectors and cluster-specific weights are drawn) and shared $\mathcal{D}^{(test)}$ (new realizations of feature vectors are drawn) datasets were generated. The shaded region is $\pm$ one standard deviation.  
 
 \begin{figure}[h]
-\includegraphics[width=10cm]{Linreg_Torch_637015_est_error copy.png}
+\includegraphics[width=10cm]{Linreg_Torch_637015_est_error.png}
 \caption{Algorithm 1 weight vector estimation error. Subplots corresponds to different regularization parameter values and lines correspond to different ratio d/m of a feature vector and local dataset size.}
 \end{figure}
 
