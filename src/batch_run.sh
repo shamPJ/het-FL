@@ -9,9 +9,9 @@
 case $SLURM_ARRAY_TASK_ID in
    0)  REG=0 ;;
    1)  REG=1 ;;
-   2)  REG=5 ;;
+   2)  REG=50 ;;
 esac
 
 module load mamba
 source activate hetFL
-srun python run.py --reg_term=$REG --n_neighbours 50
+srun python run.py --reg_term=$REG --p_in 1 --p_out 0

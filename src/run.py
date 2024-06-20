@@ -13,9 +13,9 @@ parser.add_argument("-p_out", "--p_out", default=0.2, type=float, help="between 
 parser.add_argument("-lrate", "--lrate", default=0.01, type=float, help="learning rate of torch.optim.SGD")
 parser.add_argument("-n_iters", "--n_iters", default=2000, type=int, help="Number of SGD iterations")
 parser.add_argument("-reg_term", "--reg_term", default=0.05, type=float, help="GTV regularization")
-parser.add_argument("-adj_matrix", "--adj_matrix", default=False, type=bool, help="if adjacency matrix given (Algo 1) or not (Algo 2 and 3)")
+parser.add_argument("-adj_matrix", "--adj_matrix", default=True, type=bool, help="if adjacency matrix given (Algo 1) or not (Algo 2 and 3)")
 parser.add_argument("-n_neighbours", "--n_neighbours", default=10, type=int, help="how many edges to add if adjacency matrix is not given")
-parser.add_argument("-n_neighbours_fixed", "--n_neighbours_fixed", default=True, type=bool, help="keep node degree const and equal to n_neighbours (Algo 3) or not (Algo 2), if adjacency matrix is not given")
+parser.add_argument("-n_neighbours_fixed", "--n_neighbours_fixed", default=False, type=bool, help="keep node degree const and equal to n_neighbours (Algo 3) or not (Algo 2), if adjacency matrix is not given")
 
 args = parser.parse_args()
 #======================== EXP SETUP ========================#
