@@ -357,7 +357,7 @@ def load_and_plot_est_error(p_dir):
     # indexes for ordered subdirs by increasing lambda
     indx = np.argsort([float(subdir.split('/')[-2].split('_')[-1]) for subdir in subdirs])
     # figure with 2 rows (upper row training loss, lower - validation), n cols corresponding to different reg.term value
-    fig, axes = plt.subplots(2, len(subdirs), sharey='row', figsize=(8,8))
+    fig, axes = plt.subplots(2, len(subdirs), figsize=(8,8))
 
     for i, ind in enumerate(indx):
         f = subdirs[ind]
@@ -380,6 +380,7 @@ def load_and_plot_est_error(p_dir):
         # plot subplot
         axes[0, i] = plot_mean_sd(axes[0, i], est_error_means, est_error_std, d_m_ratio, reg_term, title=True)
         axes[1, i] = plot_mean_sd(axes[1, i], est_error_means_scaled,  est_error_std_scaled, d_m_ratio, reg_term)
+        axes[1, i].axhline(1, linestyle='--')
 
     axes[1, -1].legend()
     axes[0, 0].set_ylabel ('Weight vector est. error') 
