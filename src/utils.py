@@ -177,8 +177,8 @@ def mean_sd_scaled(loss_list, loss_list_pooled):
     Scaled average MSE (or other loss) values (across all repetitions and nodes) for each sample size. SD is computed across `repeat_times`. 
 
     Args:
-    : loss_list        : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing training loss for repeat_times runs for each node in the graph. 
-    : loss_list_pooled : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing validation loss for repeat_times runs for each "oracle" model on the corresponding local node's val ds. 
+    : loss_list        : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing loss for repeat_times runs for each node in the graph. 
+    : loss_list_pooled : list with len(n_samples) elements. Each element is an array of shape (repeat_times, n_nodes, n_iters) containing loss for repeat_times runs for each "oracle" model. 
 
     Output:
     : loss_mean        : list with len(n_samples) elements. Each element is an array (n_iters) - average across all runs of average across all nodes MSEs for each hyperparam combination.
