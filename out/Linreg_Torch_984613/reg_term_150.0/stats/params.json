@@ -1,0 +1,21 @@
+{
+  "adj_matrix": true,
+  "reg_term": 150.0,
+  "n_clusters": 3,
+  "n_ds": 50,
+  "n_features": 10,
+  "n_samples_list": [
+    2,
+    3,
+    5,
+    10,
+    20
+  ],
+  "d_m_ratio": [
+    5.0,
+    3.3333333333333335,
+    2.0,
+    1.0,
+    0.5
+  ]
+}
